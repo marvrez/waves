@@ -6,8 +6,11 @@ class Device {
 public:
     Device(const Window& window, bool enableValidationLayer=true);
     ~Device();
-    VkCommandBuffer CreateCommandBuffer();
-    void Submit();
+    VkCommandBuffer CreateCommandBuffer() const;
+    void Submit(std::function<void(VkCommandBuffer)> recordCmdBuffer) const;
+
+    VmaAllocator Allocator() const { return mAllocator; }
+    uint32_t GetSelectedQueueIndex() const { return mQueueIndex; }
 
 private:
     VkDebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;

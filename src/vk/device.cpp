@@ -325,7 +325,7 @@ Device::~Device()
     vkDestroyInstance(mInstance, nullptr);
 }
 
-VkCommandBuffer Device::CreateCommandBuffer()
+VkCommandBuffer Device::CreateCommandBuffer() const
 {
     VkCommandBuffer commandBuffer;
     VkCommandBufferAllocateInfo allocInfo = { 
@@ -338,7 +338,7 @@ VkCommandBuffer Device::CreateCommandBuffer()
     return commandBuffer;
 }
 
-void Device::Submit()
+void Device::Submit(std::function<void(VkCommandBuffer)> recordCmdBuffer) const
 {
     VkCommandBuffer commandBuffer = this->CreateCommandBuffer();
 
@@ -348,7 +348,7 @@ void Device::Submit()
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
     };
     VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-    // TODO: add generic function that records commands
+    recordCmdBuffer(commandBuffer);
     VK_CHECK(vkEndCommandBuffer(commandBuffer));
 
     const VkSubmitInfo submitInfo = {

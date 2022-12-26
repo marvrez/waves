@@ -7,3 +7,4 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <functional>
