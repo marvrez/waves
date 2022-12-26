@@ -36,6 +36,7 @@ public:
     {
         glfwPollEvents();
     }
+    GLFWwindow* GetHandle() const { return mWindow; }
 
 private:
     int mWidth, mHeight;

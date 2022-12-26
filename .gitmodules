@@ -7,3 +7,9 @@
 [submodule "thirdparty/fmt"]
 	path = thirdparty/fmt
 	url = git@github.com:fmtlib/fmt.git
+[submodule "thirdparty/VulkanMemoryAllocator"]
+	path = thirdparty/VulkanMemoryAllocator
+	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "thirdparty/volk"]
+	path = thirdparty/volk
+	url = git@github.com:zeux/volk.git
