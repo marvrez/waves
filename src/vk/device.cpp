@@ -208,12 +208,13 @@ static VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t queueInde
         .storagePushConstant8 = VK_TRUE,
         .shaderFloat16 = VK_TRUE,
         .shaderInt8 = VK_TRUE,
-       .pNext = (void*)&deviceFeatures11,
+        .pNext = (void*)&deviceFeatures11,
     };
 
-    const VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures = {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+    const VkPhysicalDeviceVulkan13Features deviceFeatures13 = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
         .dynamicRendering = VK_TRUE,
+        .synchronization2 = VK_TRUE,
         .pNext = (void*)&deviceFeatures12,
     };
 
@@ -223,7 +224,7 @@ static VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t queueInde
         .pQueueCreateInfos = &queueCreateInfo,
         .enabledExtensionCount = uint32_t(deviceExtensions.size()),
         .ppEnabledExtensionNames = deviceExtensions.data(),
-        .pNext = &dynamicRenderingFeatures,
+        .pNext = &deviceFeatures13,
     };
 
     VkDevice device;
