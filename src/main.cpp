@@ -2,6 +2,7 @@
 
 #include "vk/device.h"
 #include "vk/buffer.h"
+#include "vk/texture.h"
 
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
@@ -19,6 +20,14 @@ int main()
         .data = (void*)data
     };
     Buffer deviceBuffer = Buffer(device, desc);
+
+    TextureDesc texDesc = {
+        .width = 100,
+        .height = 100,
+        .format = VK_FORMAT_R8G8B8A8_UNORM,
+        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+    };
+    Texture tex = Texture(device, texDesc);
     while (!window.ShouldClose()) {
         window.PollEvents();
     }

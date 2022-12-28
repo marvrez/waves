@@ -9,6 +9,7 @@ public:
     VkCommandBuffer CreateCommandBuffer() const;
     void Submit(std::function<void(VkCommandBuffer)> recordCmdBuffer) const;
 
+    operator VkDevice() const { return mDevice; }
     VmaAllocator Allocator() const { return mAllocator; }
     uint32_t GetSelectedQueueIndex() const { return mQueueIndex; }
 
