@@ -3,6 +3,7 @@
 #include "vk/device.h"
 #include "vk/buffer.h"
 #include "vk/texture.h"
+#include "vk/frame_pacing.h"
 
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
@@ -28,6 +29,9 @@ int main()
         .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
     };
     Texture tex = Texture(device, texDesc);
+
+    FramePacingState framePacingState = FramePacingState(device);
+
     while (!window.ShouldClose()) {
         window.PollEvents();
     }
