@@ -1,5 +1,7 @@
 #pragma once
 
+#include "logger.h"
+
 // https://github.com/Reedbeta/nrr_enumerate
 template <typename T>
 constexpr auto enumerate(T&& iterable)
@@ -17,4 +19,18 @@ constexpr auto enumerate(T&& iterable)
         auto end() { return iterator{ 0, std::end(iterable) }; }
     };
     return iterable_wrapper{ std::forward<T>(iterable) };
+}
+
+static inline std::string ReadFile(const std::string_view& path)
+{
+    std::ifstream file = std::ifstream(path.data());
+    std::string line, text;
+    if (!file.is_open()) {
+        std::string file_path = std::string(std::filesystem::current_path()) + '/' + path.data();
+        file = std::ifstream(file_path.data());
+        assert(file.is_open());
+    }
+    if (!file.is_open()) LOG_WARN("Could not open file: {}", path.data());
+    while (std::getline(file, line)) text += line + "\n";
+    return text;
 }

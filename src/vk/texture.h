@@ -2,7 +2,6 @@
 
 struct SamplerDesc {
     VkFilter filterMode = VK_FILTER_LINEAR;                                             // Filter mode.
-    VkSamplerReductionMode reductionMode = VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE;  // Reduction mode for linear filtering.
     VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;           // Address mode.
     VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;                    // Mipmap mode.
 };

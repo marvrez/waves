@@ -12,6 +12,9 @@ public:
     operator VkDevice() const { return mDevice; }
     VmaAllocator Allocator() const { return mAllocator; }
     uint32_t GetSelectedQueueIndex() const { return mQueueIndex; }
+    VkQueue GetSelectedQueue() const { return mQueue; }
+    VkSurfaceKHR GetSurface() const { return mSurface; }
+    VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
 
 private:
     VkDebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;

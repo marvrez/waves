@@ -13,3 +13,6 @@
 [submodule "thirdparty/volk"]
 	path = thirdparty/volk
 	url = git@github.com:zeux/volk.git
+[submodule "thirdparty/SPIRV-Reflect"]
+	path = thirdparty/SPIRV-Reflect
+	url = git@github.com:KhronosGroup/SPIRV-Reflect.git

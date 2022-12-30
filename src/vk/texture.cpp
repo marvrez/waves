@@ -32,7 +32,6 @@ static std::size_t CalculateSamplerHash(SamplerDesc desc)
 {
     std::size_t hash = 0;
     HashCombine(hash, desc.filterMode);
-    HashCombine(hash, desc.reductionMode);
     HashCombine(hash, desc.addressMode);
     HashCombine(hash, desc.mipmapMode);
     return hash;
@@ -47,13 +46,8 @@ static Texture::SamplerState CreateOrGetSamplerState(VkDevice device, SamplerDes
         return { .hash = hash, .sampler = samplerState->second.sampler };
     }
 
-    const VkSamplerReductionModeCreateInfo reductionMode = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO,
-        .reductionMode = desc.reductionMode,
-    };
     const VkSamplerCreateInfo samplerCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .pNext = &reductionMode,
         .magFilter = desc.filterMode,
         .minFilter = desc.filterMode,
         .mipmapMode = desc.mipmapMode,
@@ -155,11 +149,11 @@ Texture::~Texture()
     vkDestroyImageView(mDevice, mImageView, nullptr);
 
     // Destroy sampler
-    GlobalSamplerState& gSamplerState = gSamplerStateCache[mSamplerState.hash];
-    assert(gSamplerState.sampler == mSamplerState.sampler);
-    assert(gSamplerState.count > 0u);
-    if (gSamplerState.count-- == 1u) {
-        vkDestroySampler(mDevice, gSamplerState.sampler, nullptr);
+    GlobalSamplerState& samplerState = gSamplerStateCache[mSamplerState.hash];
+    assert(samplerState.sampler == mSamplerState.sampler);
+    assert(samplerState.count > 0u);
+    if (samplerState.count-- == 1u) {
+        vkDestroySampler(mDevice, samplerState.sampler, nullptr);
     }
 
     if (!mFromSwapchain) {

@@ -49,11 +49,11 @@ static VkInstance CreateInstance(bool enableValidationLayers)
 
     VkInstanceCreateInfo instanceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pApplicationInfo = &appInfo,
-        .enabledExtensionCount = uint32_t(kInstanceExtensions.size()),
 #ifdef __APPLE__
         .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
 #endif // __APPLE__
+        .pApplicationInfo = &appInfo,
+        .enabledExtensionCount = uint32_t(kInstanceExtensions.size()),
         .ppEnabledExtensionNames = kInstanceExtensions.data(),
     };
     LOG_INFO("Enabled extensions: {}", fmt::join(kInstanceExtensions, ", "));
@@ -67,12 +67,11 @@ static VkInstance CreateInstance(bool enableValidationLayers)
 #ifdef _DEBUG
     std::vector<VkValidationFeatureEnableEXT> enabledValidationFeatures = { VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT };
     const VkValidationFeaturesEXT validationFeatures = {
-        .sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT
-        .enabledValidationFeatureCount = enabledValidationFeatures.size(),
-        .pEnabledValidationFeatures = enabledValidationFeatures.data();
+        .sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
+        .enabledValidationFeatureCount = (uint32_t)enabledValidationFeatures.size(),
+        .pEnabledValidationFeatures = enabledValidationFeatures.data(),
     };
     instanceCreateInfo.pNext = &validationFeatures;
-    LOG_INFO("Enabled validation layers: {}", fmt::join(enableValidationFeatures, ", "));
 #endif // _DEBUG
 
     VkInstance instance;
@@ -140,7 +139,7 @@ static bool IsPhysicalDeviceSupported(VkPhysicalDevice physicalDevice)
     return true;
 }
 
-static std::pair<VkPhysicalDevice, uint32_t> GetPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
+static std::pair<VkPhysicalDevice, uint32_t> SelectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
     const auto& physicalDeviceCandidates = GetVector<VkPhysicalDevice>(vkEnumeratePhysicalDevices, instance);
     if (physicalDeviceCandidates.empty()) {
@@ -214,7 +213,7 @@ static VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t queueInde
     const VkPhysicalDeviceVulkan13Features deviceFeatures13 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
         .dynamicRendering = VK_TRUE,
-        .synchronization2 = VK_TRUE,
+        // .synchronization2 = VK_TRUE,
         .pNext = (void*)&deviceFeatures12,
     };
 
@@ -296,8 +295,10 @@ Device::Device(const Window& window, bool enableValidationLayer)
 #endif
     mSurface = CreateSurface(window, mInstance);
     
-    const auto [mPhysicalDevice, mQueueIndex] = GetPhysicalDevice(mInstance, mSurface);
-    assert(mPhysicalDevice != VK_NULL_HANDLE && mQueueIndex != ~0u);
+    const auto [physicalDevice, queueIndex] = SelectPhysicalDevice(mInstance, mSurface);
+    assert(physicalDevice != VK_NULL_HANDLE && queueIndex != ~0u);
+    mPhysicalDevice = physicalDevice;
+    mQueueIndex = queueIndex;
 
     mDevice = CreateDevice(mPhysicalDevice, mQueueIndex);
     vkGetDeviceQueue(mDevice, mQueueIndex, 0, &mQueue);
@@ -317,9 +318,7 @@ Device::~Device()
     vkDestroyDevice(mDevice, nullptr);
 
     if (mDebugMessenger != VK_NULL_HANDLE) {
-        printf("SEGFAULT?\n");
         vkDestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
-        printf("SEGFAULT\n");
     }
 
     vkDestroySurfaceKHR(mInstance, mSurface, nullptr);

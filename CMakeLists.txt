@@ -84,3 +84,18 @@ target_include_directories(VulkanMemoryAllocator PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE VulkanMemoryAllocator)
 
 set_property(TARGET VulkanMemoryAllocator PROPERTY FOLDER "thirdparty")
+
+# Install SPIRV-Reflect
+message("Installing SPIRV-Reflect...")
+
+set(SPIRV_REFLECT_DIR thirdparty/SPIRV-Reflect)
+
+set(SPIRV_REFLECT_EXECUTABLE OFF CACHE BOOL "")
+set(SPIRV_REFLECT_EXAMPLES OFF CACHE BOOL "")
+set(SPIRV_REFLECT_STATIC_LIB ON CACHE BOOL "")
+
+add_subdirectory(${SPIRV_REFLECT_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${SPIRV_REFLECT_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE spirv-reflect-static)
+
+set_property(TARGET spirv-reflect-static PROPERTY FOLDER "thirdparty")
