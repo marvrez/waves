@@ -11,6 +11,11 @@ include_directories(src)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.h)
 
+# Compile shaders
+message("Setting up shaders...")
+add_subdirectory(src/shaders)
+add_dependencies(${PROJECT_NAME} Shaders_SPIRV)
+
 # Find packages
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})

@@ -43,7 +43,8 @@ static VkDescriptorType GetDescriptorType(SpvReflectDescriptorType reflectDescri
 Shader::Shader(const Device& device, const char* filename, const char* entrypoint)
     : mDevice(device), mEntrypoint(entrypoint)
 {
-    std::string spvSource = ReadFile(filename);
+    LOG_INFO("Loading shader '{}' with entrypoint '{}'", filename, entrypoint);
+    std::string spvSource = ReadSourceFile(filename);
 
     const VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,

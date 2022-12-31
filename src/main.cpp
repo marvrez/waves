@@ -6,6 +6,7 @@
 #include "vk/texture.h"
 #include "vk/frame_pacing.h"
 #include "vk/swapchain.h"
+#include "vk/shader.h"
 
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
@@ -40,6 +41,9 @@ int main()
         .framebufferHeight = framebufferHeight
     };
     Swapchain swapchain = Swapchain(device, swapchainDesc);
+
+    Shader shaderVS = Shader(device, "triangle.vs.spv");
+    Shader shaderFS = Shader(device, "triangle.ps.spv");
 
     uint32_t frameIndex = 0;
     while (!window.ShouldClose()) {

@@ -114,7 +114,7 @@ Swapchain::Swapchain(const Device& device, SwapchainDesc desc)
 
 Swapchain::~Swapchain()
 {
-    LOG_INFO("DELETING SWAPCHAIN");
+    LOG_INFO("Deleting swapchain...");
     mTextures.clear();
     vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
 }

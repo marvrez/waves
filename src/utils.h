@@ -34,3 +34,13 @@ static inline std::string ReadFile(const std::string_view& path)
     while (std::getline(file, line)) text += line + "\n";
     return text;
 }
+
+static inline std::string ReadSourceFile(const std::string_view& filename)
+{
+    std::ifstream file(filename.data());
+    if(!file.good()) return "";
+    // Found usable source file
+    std::stringstream source_buffer;
+    source_buffer << file.rdbuf();
+    return source_buffer.str();
+}
