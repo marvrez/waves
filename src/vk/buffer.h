@@ -22,6 +22,7 @@ public:
 
     VkBuffer GetVkBuffer() const { return mBuffer; }
     VkDeviceSize GetSizeInBytes() const { return mByteSize; }
+    void* GetMappedData() const { return mMappedData; }
 
     void RecordBarrier(
         VkCommandBuffer cmdBuf,

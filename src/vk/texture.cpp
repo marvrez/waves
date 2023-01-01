@@ -166,7 +166,7 @@ void Texture::RecordBarrier(
     VkImageLayout oldLayout, VkImageLayout newLayout,
     VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask
-)
+) const
 {
     const VkImageMemoryBarrier imageMemoryBarrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,

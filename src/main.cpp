@@ -1,5 +1,7 @@
 #include "window.h"
 
+#include "gui.h"
+
 #include "vk/device.h"
 #include "vk/common.h"
 #include "vk/texture.h"
@@ -23,6 +25,7 @@ int main()
         .framebufferHeight = framebufferHeight
     };
     Swapchain swapchain = Swapchain(device, swapchainDesc);
+    GUI gui = GUI(device, swapchain, window);
 
     Shader triangleVS = Shader(device, "triangle.vs.spv");
     Shader trianglePS = Shader(device, "triangle.ps.spv");
@@ -61,6 +64,7 @@ int main()
     uint32_t frameIndex = 0;
     while (!window.ShouldClose()) {
         window.PollEvents();
+        gui.NewFrame();
 
         framePacingState.WaitForFrameInFlight(frameIndex);
         auto frameState = framePacingState.GetFrameState(frameIndex);
@@ -72,7 +76,21 @@ int main()
         const uint32_t swapchainImageIndex = swapchain.AcquireNextImage(
             UINT64_MAX, frameState.imageAvailableSemaphore
         );
+
+        swapchain.GetTexture(swapchainImageIndex).RecordBarrier(cmdBuf,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_NONE, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+        );
+
         drawTriangle(cmdBuf, swapchainImageIndex);
+        gui.DrawFrame(cmdBuf, swapchainImageIndex, frameIndex);
+
+        swapchain.GetTexture(swapchainImageIndex).RecordBarrier(cmdBuf,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_NONE,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+        );
 
         VK_CHECK(vkEndCommandBuffer(cmdBuf));
         swapchain.SubmitAndPresent(cmdBuf, swapchainImageIndex, frameState);

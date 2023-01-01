@@ -32,6 +32,7 @@ public:
     VkImageView GetView() const { return mImageView; }
     VkImage GetImage() const { return mImage; }
     VkSampler GetSampler() const { return mSamplerState.sampler; }
+    VkFormat GetFormat() const { return mFormat; }
 
     void RecordBarrier(
         VkCommandBuffer cmdBuf,
@@ -41,7 +42,7 @@ public:
         VkAccessFlags dstAccessMask,
         VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-    );
+    ) const;
 
 private:
     const Device& mDevice;

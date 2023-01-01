@@ -89,7 +89,7 @@ public:
     Pipeline(const Device& device, const PipelineDesc& desc);
     ~Pipeline();
 
-    void Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc) const;
+    void Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<void()> recordingCallback = [](){}) const;
 private:
     const Device& mDevice;
     VkPipelineBindPoint mBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;

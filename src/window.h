@@ -44,7 +44,25 @@ public:
         return { (uint32_t)width, (uint32_t)height };
     }
 
+    std::pair<uint32_t, uint32_t> GetWindowSize() const
+    {
+        int width, height;
+        glfwGetWindowSize(mWindow, &width, &height);
+        return { (uint32_t)width, (uint32_t)height };
+    }
+
+    std::pair<double, double> GetCursorPosition() const
+    {
+        double xMousePosition, yMousePosition;
+        glfwGetCursorPos(mWindow, &xMousePosition, &yMousePosition);
+        return { xMousePosition, yMousePosition };
+    }
+
+    bool IsMouseLeftButtonPressed() const { return IsMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT); }
+    bool IsMouseRightButtonPressed() const { return IsMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT); }
+
 private:
+    bool IsMouseButtonPressed(int button) const { return glfwGetMouseButton(mWindow, button) == GLFW_PRESS; }
     int mWidth, mHeight;
     GLFWwindow* mWindow;
 };

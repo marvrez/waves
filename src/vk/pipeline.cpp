@@ -163,7 +163,6 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
         });
     }
 
-
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
@@ -301,7 +300,7 @@ Pipeline::~Pipeline()
     vkDestroyDescriptorSetLayout(mDevice, mSetLayout, nullptr);
 }
 
-void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc) const
+void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<void()> recordingCallback) const
 {
     assert (mBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS);
 
@@ -378,8 +377,10 @@ void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc) const
     }
     vkCmdBindPipeline(cmdBuf, mBindPoint, mPipeline);
 
+    recordingCallback();
+
     const auto& args = desc.drawArguments;
-    vkCmdDraw(cmdBuf, args.vertexCount, args.instanceCount, args.startVertexLocation, args.startInstanceLocation);
+    // vkCmdDraw(cmdBuf, args.vertexCount, args.instanceCount, args.startVertexLocation, args.startInstanceLocation);
 
     vkCmdEndRenderingKHR(cmdBuf);
 }
