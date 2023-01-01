@@ -7,6 +7,7 @@
 #include "vk/frame_pacing.h"
 #include "vk/swapchain.h"
 #include "vk/shader.h"
+#include "vk/pipeline.h"
 
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
@@ -43,7 +44,23 @@ int main()
     Swapchain swapchain = Swapchain(device, swapchainDesc);
 
     Shader shaderVS = Shader(device, "triangle.vs.spv");
-    Shader shaderFS = Shader(device, "triangle.ps.spv");
+    Shader shaderPS = Shader(device, "triangle.ps.spv");
+
+    const Pipeline trianglePipeline = Pipeline(device, {
+        .type = PipelineType::Graphics,
+        .shaders = { &shaderVS, &shaderPS },
+        .attachmentLayout = {
+            .colorAttachments = {{
+                .format = swapchain.GetFormat(),
+                .shouldEnableBlend = true
+            }},
+        },
+        .rasterization = {
+            .cullMode = VK_CULL_MODE_BACK_BIT,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE
+        },
+        .depthStencil = { .shouldEnableDepthTesting = true }
+    });
 
     uint32_t frameIndex = 0;
     while (!window.ShouldClose()) {

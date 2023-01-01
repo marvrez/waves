@@ -29,6 +29,9 @@ public:
     Texture(const Device& device, TextureDesc desc);
     ~Texture();
 
+    VkImageView GetView() const { return mImageView; }
+    VkSampler GetSampler() const { return mSamplerState.sampler; }
+
     void RecordBarrier(
         VkCommandBuffer cmdBuf,
         VkImageLayout oldLayout,

@@ -19,6 +19,9 @@ public:
     void SubmitAndPresent(VkCommandBuffer cmdBuf, uint32_t imageIndex, FrameState frameState);
 
     uint32_t AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);
+
+    VkFormat GetFormat() const { return mFormat; }
+    VkExtent2D GetExtent() const { return mExtent; }
 private:
     const Device& mDevice;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
