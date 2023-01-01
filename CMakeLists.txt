@@ -104,3 +104,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${SPIRV_REFLECT_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE spirv-reflect-static)
 
 set_property(TARGET spirv-reflect-static PROPERTY FOLDER "thirdparty")
+
+message("Installing GLM...")
+set(GLM_DIR thirdparty/glm)
+target_include_directories(${PROJECT_NAME} PRIVATE ${GLM_DIR})
