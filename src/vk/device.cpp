@@ -361,3 +361,8 @@ void Device::Submit(std::function<void(VkCommandBuffer)> recordCmdBuffer) const
 
     vkFreeCommandBuffers(mDevice, mCommandPool, 1, &commandBuffer);
 }
+
+void Device::WaitIdle() const
+{
+    VK_CHECK(vkDeviceWaitIdle(mDevice));
+}

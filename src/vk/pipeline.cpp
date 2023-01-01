@@ -276,7 +276,6 @@ Pipeline::Pipeline(const Device& device, const PipelineDesc& desc)
     mSetLayout = CreateDescriptorSetLayout(mDevice, layoutBindings);
     mPipelineLayout = CreatePipelineLayout(mDevice, mSetLayout, mPushConstants);
     if (layoutBindings.size() > 0) {
-        LOG_INFO("AHHH {}", layoutBindings.size());
         mUpdateTemplate = CreateDescriptorUpdateTemplate(mDevice, mSetLayout, mPipelineLayout, mBindPoint, layoutBindings);
     }
 
@@ -300,4 +299,87 @@ Pipeline::~Pipeline()
     vkDestroyDescriptorUpdateTemplate(mDevice, mUpdateTemplate, nullptr);
     vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(mDevice, mSetLayout, nullptr);
+}
+
+void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc) const
+{
+    assert (mBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS);
+
+    std::vector<VkRenderingAttachmentInfo> colorAttachments;
+    colorAttachments.reserve(desc.colorAttachments.size());
+    for (const auto& colorAttachment : desc.colorAttachments) {
+        assert(colorAttachment.texture->GetImage() != VK_NULL_HANDLE);
+        colorAttachments.push_back({
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView = colorAttachment.texture->GetView(),
+            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+            .loadOp = colorAttachment.loadOp,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = { .color = colorAttachment.clear.color },
+        });
+    }
+
+    VkRenderingInfo renderingInfo = {
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .layerCount = 1,
+        .renderArea = {
+            .offset = {
+                .x = int32_t(desc.viewport.offset.x),
+                .y = int32_t(desc.viewport.offset.y),
+            },
+            .extent = {
+                .width = uint32_t(desc.viewport.extent.x),
+                .height = uint32_t(desc.viewport.extent.y),
+            },
+        },
+        .colorAttachmentCount = uint32_t(colorAttachments.size()),
+        .pColorAttachments = colorAttachments.data(),
+    };
+
+    VkRenderingAttachmentInfoKHR depthAttachment = { VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
+    if (desc.depthStencilAttachment.texture != nullptr && desc.depthStencilAttachment.texture->GetImage() != VK_NULL_HANDLE) {
+        depthAttachment.imageView = desc.depthStencilAttachment.texture->GetView();
+        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+        depthAttachment.loadOp = desc.depthStencilAttachment.loadOp;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depthAttachment.clearValue.depthStencil = desc.depthStencilAttachment.clear.depthStencil;
+
+        renderingInfo.pDepthAttachment = &depthAttachment;
+    }
+
+    vkCmdBeginRenderingKHR(cmdBuf, &renderingInfo);
+
+    if (desc.viewport.extent.x != 0.0f && desc.viewport.extent.y != 0.0f) {
+        const VkViewport viewport = {
+            .x = desc.viewport.offset.x, .y = desc.viewport.offset.y,
+            .width = desc.viewport.extent.x, .height = desc.viewport.extent.y,
+            .minDepth = 0.0f, .maxDepth = 1.0f
+        };
+        vkCmdSetViewport(cmdBuf, 0u, 1u, &viewport);
+    }
+
+    if (desc.scissor.extent.x != 0u && desc.scissor.extent.y != 0u) {
+        const VkRect2D scissorRect = {
+            .offset = { .x = desc.scissor.offset.x, .y = desc.scissor.offset.y },
+            .extent = { .width = desc.scissor.extent.x, .height = desc.scissor.extent.y }
+        };
+        vkCmdSetScissor(cmdBuf, 0u, 1u, &scissorRect);
+    }
+
+    const auto& pushConstants = desc.pushConstants;
+    if (pushConstants.byteSize != 0u && pushConstants.data != nullptr) {
+        vkCmdPushConstants(
+            cmdBuf, mPipelineLayout, mPushConstants.stageFlags, 0u, pushConstants.byteSize, pushConstants.data
+        );
+    }
+
+    if(desc.bindings.size() > 0) {
+        vkCmdPushDescriptorSetWithTemplateKHR(cmdBuf, mUpdateTemplate, mPipelineLayout, 0, desc.bindings.begin());
+    }
+    vkCmdBindPipeline(cmdBuf, mBindPoint, mPipeline);
+
+    const auto& args = desc.drawArguments;
+    vkCmdDraw(cmdBuf, args.vertexCount, args.instanceCount, args.startVertexLocation, args.startInstanceLocation);
+
+    vkCmdEndRenderingKHR(cmdBuf);
 }

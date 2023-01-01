@@ -30,6 +30,7 @@ public:
     ~Texture();
 
     VkImageView GetView() const { return mImageView; }
+    VkImage GetImage() const { return mImage; }
     VkSampler GetSampler() const { return mSamplerState.sampler; }
 
     void RecordBarrier(

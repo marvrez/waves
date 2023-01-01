@@ -4,9 +4,9 @@ struct VSOutput {
 };
 
 static const float2 gPositions[] = {
-	float2(-0.5, -0.5),
-	float2( 0.0,  0.5),
-	float2( 0.5, -0.5),
+	float2( 0.0, -0.5),
+	float2(-0.5,  0.5),
+	float2( 0.5,  0.5),
 };
 
 static const float3 gColors[] = {

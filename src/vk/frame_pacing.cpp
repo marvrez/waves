@@ -26,6 +26,7 @@ FramePacingState::FramePacingState(const Device& device)
         state.imageAvailableSemaphore = CreateSemaphore(device);
         state.renderFinishedSemaphore = CreateSemaphore(device);
         state.inFlightFence = CreateFence(device);
+        state.commandBuffer = device.CreateCommandBuffer();
     }
 }
 
@@ -42,4 +43,11 @@ FrameState FramePacingState::GetFrameState(uint32_t frameIndex) const
 {
     assert(frameIndex < mFrameStates.size());
     return mFrameStates[frameIndex];
+}
+
+void FramePacingState::WaitForFrameInFlight(uint32_t frameIndex) const
+{
+    const auto& frameState = this->GetFrameState(frameIndex);
+    VK_CHECK(vkWaitForFences(mDevice, 1, &frameState.inFlightFence, VK_TRUE, UINT64_MAX));
+    VK_CHECK(vkResetFences(mDevice, 1, &frameState.inFlightFence));
 }

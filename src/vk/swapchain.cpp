@@ -151,3 +151,9 @@ uint32_t Swapchain::AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, Vk
     VK_CHECK(vkAcquireNextImageKHR(mDevice, mSwapchain, timeout, semaphore, fence, &nextImageIndex));
     return nextImageIndex;
 }
+
+const Texture& Swapchain::GetTexture(uint32_t imageIndex) const
+{
+    assert(imageIndex < mTextures.size());
+    return mTextures[imageIndex];
+}
