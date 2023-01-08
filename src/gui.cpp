@@ -204,15 +204,22 @@ void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32
         .translate = glm::vec2(-1.0f)
     };
 
+    ImDrawData* drawData = ImGui::GetDrawData();
+    const int fbWidth  = drawData->DisplaySize.x * drawData->FramebufferScale.x;
+    const int fbHeight = drawData->DisplaySize.y * drawData->FramebufferScale.y;
+    if (fbWidth <= 0 || fbHeight <= 0) return; // Window is minimized
+    // These clip variables are used to project scissor/clipping rectangles into framebuffer space
+    const ImVec2 clipOffset = drawData->DisplayPos;       // (0,0) unless using multi-viewports
+    const ImVec2 clipScale  = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+
     const auto& tex = mSwapchain.GetTexture(swapchainImageIndex);
     const DrawDesc drawDesc = {
-        .viewport = { .offset = { 0.0f, 0.0f }, .extent = { io.DisplaySize.x, io.DisplaySize.y } },
+        .viewport = { .offset = { 0.0f, 0.0f }, .extent = { fbWidth, fbHeight } },
         .colorAttachments = {{ .texture = &tex, .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD }},
         .bindings = { Binding(*mFontTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) },
         .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData }
     };
     mPipeline->Draw(cmdBuf, drawDesc, [&]() {
-        ImDrawData* drawData = ImGui::GetDrawData();
         int globalIndexOffset = 0, globalVertexOffset = 0;
         if (drawData->CmdListsCount > 0) {
             const VkBuffer vertexBuffers[] = { vertexBuffer->GetVkBuffer() };
@@ -223,15 +230,22 @@ void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32
                 const ImDrawList* cmdList = drawData->CmdLists[listIdx];
                 for (int bufIdx = 0; bufIdx < cmdList->CmdBuffer.Size; ++bufIdx) {
                     const ImDrawCmd* drawCmd = &cmdList->CmdBuffer[bufIdx];
+
+                    // Project scissor/clipping rectangles into framebuffer space and
+                    // clamp to viewport as vkCmdSetScissor() doesn't accept values that are off bounds
+                    const ImVec2 clipMin(
+                        std::max((drawCmd->ClipRect.x - clipOffset.x) * clipScale.x, 0.0f),
+                        std::max((drawCmd->ClipRect.y - clipOffset.y) * clipScale.y, 0.0f)
+                    );
+                    const ImVec2 clipMax(
+                        std::min((drawCmd->ClipRect.z - clipOffset.x) * clipScale.x, float(fbWidth)),
+                        std::min((drawCmd->ClipRect.w - clipOffset.y) * clipScale.y, float(fbHeight))
+                    );
+                    if (clipMax.x <= clipMin.x || clipMax.y <= clipMin.y) continue;
+
                     const VkRect2D scissorRect = {
-                        .offset = {
-                            .x = std::max(int(drawCmd->ClipRect.x), 0),
-                            .y = std::max(int(drawCmd->ClipRect.y), 0)
-                        },
-                        .extent = {
-                            .width = uint32_t(drawCmd->ClipRect.z - drawCmd->ClipRect.x),
-                            .height = uint32_t(drawCmd->ClipRect.w - drawCmd->ClipRect.y) 
-                        }
+                        .offset = { .x = int32_t(clipMin.x), .y = int32_t(clipMin.y) },
+                        .extent = { .width = uint32_t(clipMax.x - clipMin.x), .height = uint32_t(clipMax.y - clipMin.y) }
                     };
                     vkCmdSetScissor(cmdBuf, 0, 1, &scissorRect);
                     vkCmdDrawIndexed(cmdBuf, drawCmd->ElemCount, 1, drawCmd->IdxOffset + globalIndexOffset, drawCmd->VtxOffset + globalVertexOffset, 0);
