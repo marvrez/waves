@@ -1,6 +1,7 @@
 #include "gui.h"
 
 #include "window.h"
+#include "utils.h"
 
 #include "vk/device.h"
 #include "vk/texture.h"
@@ -49,7 +50,12 @@ GUI::GUI(const Device& device, const Swapchain& swapchain, const Window& window)
             .cullMode = VK_CULL_MODE_NONE,
             .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE
         },
-        .depthStencil = { .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL }
+        .depthStencil = { .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL },
+        .attributeDescs = {
+            { .name = "POSITION0", .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ImDrawVert, pos), .stride = sizeof(ImDrawVert) },
+            { .name = "TEXCOORD0", .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ImDrawVert, uv), .stride = sizeof(ImDrawVert) },
+            { .name = "COLOR0", .format = VK_FORMAT_R8G8B8A8_UNORM, .offset = offsetof(ImDrawVert, col), .stride = sizeof(ImDrawVert) },
+        },
     };
     mPipeline = std::make_unique<Pipeline>(device, pipelineDesc);
 }
@@ -151,29 +157,27 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
 {
     ImDrawData* drawData = ImGui::GetDrawData();
 
-    const VkDeviceSize vertexBufferSize = drawData->TotalVtxCount * sizeof(ImDrawVert);
-    const VkDeviceSize indexBufferSize  = drawData->TotalIdxCount * sizeof(ImDrawIdx);
+    const uint64_t vertexBufferSize = drawData->TotalVtxCount * sizeof(ImDrawVert);
+    const uint64_t indexBufferSize  = drawData->TotalIdxCount * sizeof(ImDrawIdx);
     if (vertexBufferSize == 0 || indexBufferSize == 0) return;
 
     auto& vertexBuffer = mVertexBuffers[frameIndex];
     auto& indexBuffer = mIndexBuffers[frameIndex];
     if (vertexBuffer == nullptr || vertexBuffer->GetVkBuffer() == VK_NULL_HANDLE || vertexBuffer->GetSizeInBytes() < vertexBufferSize) {
         const BufferDesc desc = {
-            .byteSize = vertexBufferSize,
+            .byteSize = GetAlignedSize(vertexBufferSize, 32'000ull),
             .access = MemoryAccess::HOST,
-            .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
         };
         vertexBuffer = std::make_unique<Buffer>(mDevice, desc);
-        LOG_INFO("ALLOCATED {} BYTES FOR VERTEX BUFFER", vertexBufferSize);
     }
     if (indexBuffer == nullptr || indexBuffer->GetVkBuffer() == VK_NULL_HANDLE || indexBuffer->GetSizeInBytes() < indexBufferSize) {
         const BufferDesc desc = {
-            .byteSize = indexBufferSize,
+            .byteSize = GetAlignedSize(indexBufferSize, 16'000ull),
             .access = MemoryAccess::HOST,
             .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT
         };
         indexBuffer = std::make_unique<Buffer>(mDevice, desc);
-        LOG_INFO("ALLOCATED {} BYTES FOR INDEX BUFFER", indexBufferSize);
     }
 
     ImDrawVert* vertexData = (ImDrawVert*)vertexBuffer->GetMappedData();
@@ -204,16 +208,16 @@ void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32
     const DrawDesc drawDesc = {
         .viewport = { .offset = { 0.0f, 0.0f }, .extent = { io.DisplaySize.x, io.DisplaySize.y } },
         .colorAttachments = {{ .texture = &tex, .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD }},
-        .bindings = {
-            Binding(*vertexBuffer),
-            Binding(*mFontTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        },
+        .bindings = { Binding(*mFontTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) },
         .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData }
     };
     mPipeline->Draw(cmdBuf, drawDesc, [&]() {
         ImDrawData* drawData = ImGui::GetDrawData();
         int globalIndexOffset = 0, globalVertexOffset = 0;
         if (drawData->CmdListsCount > 0) {
+            const VkBuffer vertexBuffers[] = { vertexBuffer->GetVkBuffer() };
+            const VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(cmdBuf, indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
             for (int listIdx = 0; listIdx < drawData->CmdListsCount; ++listIdx) {
                 const ImDrawList* cmdList = drawData->CmdLists[listIdx];

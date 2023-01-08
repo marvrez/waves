@@ -44,3 +44,8 @@ static inline std::string ReadSourceFile(const std::string_view& filename)
     source_buffer << file.rdbuf();
     return source_buffer.str();
 }
+
+template<typename T>
+constexpr T DivRoundUp(T a, T b) { return (a + b - (T)1) / b; }
+template<typename T>
+constexpr T GetAlignedSize(T size, T alignment) { return DivRoundUp(size, alignment) * alignment; }

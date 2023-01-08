@@ -25,16 +25,26 @@ struct AttachmentLayout {
     VkFormat depthStencilFormat = VK_FORMAT_UNDEFINED;
 };
 
+struct VertexAttributeDesc {
+    std::string name;
+    VkFormat format = VK_FORMAT_UNDEFINED;
+    uint32_t binding = 0;
+    uint32_t offset = 0;
+    uint32_t stride = 0; // note: all strides for a given binding must be identical
+    bool isInstanced = false;
+};
+
 enum class PipelineType { Compute, Graphics };
 
 class Shader;
 struct PipelineDesc {
     PipelineType type;
-    std::vector<Shader*> shaders;          // Graphics pipeline shaders.
-    // These parameters are only used by compute pipelines
-    AttachmentLayout attachmentLayout = {};  // Render target layout.
-    RasterizationDesc rasterization = {};    // Rasterization descriptor.
-    DepthStencilDesc depthStencil = {};      // Depth stencil descriptor.
+    std::vector<Shader*> shaders;                                    // Pipeline shaders.
+    // NOTE: The parameters below are only used by *graphics* pipelines
+    AttachmentLayout attachmentLayout = {};                          // Render target layout.
+    RasterizationDesc rasterization = {};                            // Rasterization descriptor.
+    DepthStencilDesc depthStencil = {};                              // Depth stencil descriptor.
+    std::initializer_list<VertexAttributeDesc> attributeDescs = {};  // (Input) Attribute descriptions
 };
 
 union Binding {

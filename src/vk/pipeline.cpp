@@ -9,6 +9,8 @@
 #include "logger.h"
 #include "utils.h"
 
+#include <unordered_map>
+
 Binding::Binding(const Buffer& buffer)
 {
     bufferInfo = { .buffer = buffer.GetVkBuffer(), .offset = 0u, .range = buffer.GetSizeInBytes() };
@@ -150,6 +152,41 @@ static VkPipeline CreateComputePipeline(VkDevice device, VkPipelineLayout pipeli
     return computePipeline;
 }
 
+struct InputLayout {
+    std::vector<VkVertexInputBindingDescription> bindingDesc;
+    std::vector<VkVertexInputAttributeDescription> attributeDesc;
+};
+
+static InputLayout CreateInputLayout(const std::initializer_list<VertexAttributeDesc> attributeDescs)
+{
+    InputLayout layout;
+    std::unordered_map<uint32_t, VkVertexInputBindingDescription> bindingMap;
+    layout.attributeDesc.reserve(attributeDescs.size());
+    for (auto [location, desc] : enumerate(attributeDescs)) {
+        // collect buffer bindings
+        if (!bindingMap.contains(desc.binding)) {
+            bindingMap[desc.binding] = {
+                .binding = desc.binding,
+                .stride = desc.stride,
+                .inputRate = desc.isInstanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX,
+            };
+            layout.bindingDesc.push_back(bindingMap[desc.binding]);
+        }
+        else {
+            assert(bindingMap[desc.binding].stride == desc.stride);
+            assert(bindingMap[desc.binding].inputRate == (desc.isInstanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX));
+        }
+        // build attribute descriptions
+        layout.attributeDesc.push_back({
+            .location = uint32_t(location),
+            .binding = desc.binding,
+            .format = desc.format,
+            .offset = desc.offset,
+        });
+    }
+    return layout;
+}
+
 static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipelineLayout, const PipelineDesc& desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
@@ -163,7 +200,14 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
         });
     }
 
-    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+    const auto inputLayout = CreateInputLayout(desc.attributeDescs);
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount = uint32_t(inputLayout.bindingDesc.size()),
+        .pVertexBindingDescriptions = inputLayout.bindingDesc.data(),
+        .vertexAttributeDescriptionCount = uint32_t(inputLayout.attributeDesc.size()),
+        .pVertexAttributeDescriptions = inputLayout.attributeDesc.data(),
+    };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
