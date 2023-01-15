@@ -7,8 +7,7 @@ class Buffer;
 class Texture;
 
 struct RasterizationDesc {
-    VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;         // Rasterization cull mode.
-    VkFrontFace frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;  // Front face orientation for culling.
+    CullMode cullMode = CullMode::CCW;
 };
 
 struct DepthStencilDesc {

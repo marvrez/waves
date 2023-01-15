@@ -228,8 +228,8 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = VK_POLYGON_MODE_FILL,
         .lineWidth = 1.0f,
-        .cullMode = desc.rasterization.cullMode,
-        .frontFace = desc.rasterization.frontFace,
+        .cullMode = GetVkCullModeFlags(desc.rasterization.cullMode),
+        .frontFace = GetVkFrontFace(desc.rasterization.cullMode),
         .depthBiasEnable = VK_FALSE,
     };
 

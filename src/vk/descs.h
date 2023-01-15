@@ -37,3 +37,4 @@ enum class Format : uint16_t {
 
 enum class Filter : uint8_t { POINT, BILINEAR, TRILINEAR, COUNT};
 enum class WrapMode : uint16_t { WRAP, CLAMP_TO_EDGE, CLAMP_TO_BORDER, COUNT };
+enum class CullMode : uint16_t { NONE, CCW, CW, COUNT };

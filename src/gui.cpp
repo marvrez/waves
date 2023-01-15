@@ -47,10 +47,7 @@ GUI::GUI(const Device& device, const Swapchain& swapchain, const Window& window)
                 .shouldEnableBlend = true
             }},
         },
-        .rasterization = {
-            .cullMode = VK_CULL_MODE_NONE,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE
-        },
+        .rasterization = { .cullMode = CullMode::NONE },
         .depthStencil = { .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL },
         .attributeDescs = {
             { .name = "POSITION0", .format = Format::RG32_FLOAT, .offset = offsetof(ImDrawVert, pos), .stride = sizeof(ImDrawVert) },

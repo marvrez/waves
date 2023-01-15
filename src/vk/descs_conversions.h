@@ -97,3 +97,25 @@ constexpr VkSamplerAddressMode GetVkSamplerAddressMode(WrapMode wrapMode)
     }
     return (VkSamplerAddressMode) 0; // Shouldn't get here
 }
+
+constexpr VkCullModeFlags GetVkCullModeFlags(CullMode cullMode)
+{
+    switch (cullMode) {
+        case CullMode::NONE: return VK_CULL_MODE_NONE;
+        case CullMode::CCW: case CullMode::CW:
+            return VK_CULL_MODE_BACK_BIT;
+        case CullMode::COUNT:  return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+    }
+    return (VkCullModeFlags) 0; // Shouldn't get here
+}
+
+constexpr VkFrontFace GetVkFrontFace(CullMode cullMode)
+{
+    switch (cullMode) {
+        case CullMode::NONE:   return VK_FRONT_FACE_COUNTER_CLOCKWISE; // Don't care about value for NONE
+        case CullMode::CCW:    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        case CullMode::CW:     return VK_FRONT_FACE_CLOCKWISE;
+        case CullMode::COUNT:  return VK_FRONT_FACE_MAX_ENUM;
+    }
+    return (VkFrontFace) 0; // Shouldn't get here
+}

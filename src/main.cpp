@@ -39,10 +39,6 @@ int main()
                 .shouldEnableBlend = true
             }},
         },
-        .rasterization = {
-            .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE
-        },
         .depthStencil = { .shouldEnableDepthTesting = true }
     });
 
