@@ -13,10 +13,8 @@ struct TextureDesc {
     uint32_t mipCount = 1u;                            // Number of mipmaps.
     Format format = Format::NONE;                      // Texture pixel format.
     TextureUsageBits usage = TextureUsageBits::NONE;   // Texture usage flags.
-    VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;  // [Optional] Initial texture layout.
-    VkAccessFlags access = VK_ACCESS_NONE;             // [Optional] Initial texture access.
     SamplerDesc sampler = {};                          // Sampler descriptor.
-    VkImage swapchainImage = VK_NULL_HANDLE;           // [Optional] Usually used for swapchain images.
+    void* resource = nullptr;                          // [Optional] Usually used for swapchain images.
 };
 
 class Device;
@@ -57,5 +55,5 @@ private:
     VkImageView mImageView = VK_NULL_HANDLE;
     VkImage mImage = VK_NULL_HANDLE;
     VmaAllocation mAllocation = VK_NULL_HANDLE;
-    bool mFromSwapchain = false;
+    bool mFromExistingResource = false;
 };

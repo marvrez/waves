@@ -100,16 +100,21 @@ Swapchain::Swapchain(const Device& device, SwapchainDesc desc)
 
     auto swapchainImages = GetVector<VkImage>(vkGetSwapchainImagesKHR, (VkDevice)mDevice, mSwapchain);
     mTextures.reserve(swapchainImages.size());
-    for (auto swapchainImage : swapchainImages) {
-        mTextures.emplace_back(device, TextureDesc{
-            .width = mExtent.width,
-            .height = mExtent.height,
-            .format = mFormat,
-            .layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            .access = VK_ACCESS_NONE,
-            .swapchainImage = swapchainImage
-        });
-    }
+    device.Submit([&](VkCommandBuffer cmdBuf) {
+        for (auto swapchainImage : swapchainImages) {
+            mTextures.emplace_back(device, TextureDesc{
+                .width = mExtent.width,
+                .height = mExtent.height,
+                .format = mFormat,
+                .resource = swapchainImage
+            });
+            mTextures.back().RecordBarrier(
+                cmdBuf,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                VK_ACCESS_NONE, VK_ACCESS_NONE
+            );
+        }
+    });
 }
 
 Swapchain::~Swapchain()

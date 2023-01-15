@@ -93,13 +93,13 @@ static VkImageView CreateImageView(
 
 Texture::Texture(const Device& device, TextureDesc desc)
     : mDevice(device), mWidth(desc.width), mHeight(desc.height), mMipIndex(0), mMipCount(desc.mipCount),
-      mFormat(desc.format), mImage(desc.swapchainImage), mFromSwapchain(desc.swapchainImage != VK_NULL_HANDLE)
+      mFormat(desc.format), mImage((VkImage)desc.resource), mFromExistingResource(desc.resource != nullptr)
 {
     assert(mMipCount > 0u);
     assert(mWidth != 0u && mHeight != 0u);
     assert(mFormat != Format::NONE);
 
-    if (!mFromSwapchain) {
+    if (!mFromExistingResource) {
         assert(desc.usage != TextureUsageBits::NONE);
 
         const VkImageCreateInfo imageCreateInfo = {
@@ -132,16 +132,6 @@ Texture::Texture(const Device& device, TextureDesc desc)
     }
     mSamplerState = CreateOrGetSamplerState(device, desc.sampler);
     mImageView = CreateImageView(device, mImage, GetVkFormat(desc.format), 0u, desc.mipCount);
-
-    if (desc.layout != VK_IMAGE_LAYOUT_UNDEFINED) {
-        device.Submit([&](VkCommandBuffer cmdBuf) {
-            this->RecordBarrier(
-                cmdBuf,
-                VK_IMAGE_LAYOUT_UNDEFINED, desc.layout,
-                VK_ACCESS_NONE, desc.access
-            );
-        });
-    }
 }
 
 Texture::~Texture()
@@ -156,7 +146,7 @@ Texture::~Texture()
         vkDestroySampler(mDevice, samplerState.sampler, nullptr);
     }
 
-    if (!mFromSwapchain) {
+    if (!mFromExistingResource) {
         vmaDestroyImage(mDevice.Allocator(), mImage, mAllocation);
     }
 }
