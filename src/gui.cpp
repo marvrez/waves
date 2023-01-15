@@ -19,7 +19,7 @@ struct PushConstantData {
     glm::vec2 translate;
 };
 
-GUI::GUI(const Device& device, const Swapchain& swapchain, const Window& window)
+GUI::GUI(const Device& device, Swapchain& swapchain, const Window& window)
     : mDevice(device), mWindow(window), mSwapchain(swapchain)
 {
     const auto [windowWidth, windowHeight] = window.GetWindowSize();
@@ -77,12 +77,7 @@ void GUI::CreateFontTexture()
     memcpy(stagingBuffer.GetMappedData(), fontData, uploadSizeInBytes);
 
     mDevice.Submit([&](VkCommandBuffer cmdBuf) {
-        mFontTexture->RecordBarrier(cmdBuf,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT
-        );
-
+        mFontTexture->SetResourceState(cmdBuf, ResourceStateBits::COPY_DEST);
         const VkBufferImageCopy bufferCopyRegion{
             .imageSubresource = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1 },
             .imageExtent = { .width = uint32_t(textureWidth), .height = uint32_t(textureHeight), .depth = 1 }
@@ -94,12 +89,7 @@ void GUI::CreateFontTexture()
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1, &bufferCopyRegion
         );
-
-        mFontTexture->RecordBarrier(cmdBuf,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-        );
+        mFontTexture->SetResourceState(cmdBuf, ResourceStateBits::SHADER_RESOURCE);
     });
 }
 
@@ -151,7 +141,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
 
     auto& vertexBuffer = mVertexBuffers[frameIndex];
     auto& indexBuffer = mIndexBuffers[frameIndex];
-    if (vertexBuffer == nullptr || vertexBuffer->GetVkBuffer() == VK_NULL_HANDLE || vertexBuffer->GetSizeInBytes() < vertexBufferSize) {
+    if (vertexBuffer == nullptr || vertexBuffer->GetSizeInBytes() < vertexBufferSize) {
         const BufferDesc desc = {
             .byteSize = GetAlignedSize(vertexBufferSize, 32'000ull),
             .access = MemoryAccess::HOST,
@@ -159,7 +149,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
         };
         vertexBuffer = std::make_unique<Buffer>(mDevice, desc);
     }
-    if (indexBuffer == nullptr || indexBuffer->GetVkBuffer() == VK_NULL_HANDLE || indexBuffer->GetSizeInBytes() < indexBufferSize) {
+    if (indexBuffer == nullptr || indexBuffer->GetSizeInBytes() < indexBufferSize) {
         const BufferDesc desc = {
             .byteSize = GetAlignedSize(indexBufferSize, 16'000ull),
             .access = MemoryAccess::HOST,
@@ -200,11 +190,10 @@ void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32
     const ImVec2 clipOffset = drawData->DisplayPos;       // (0,0) unless using multi-viewports
     const ImVec2 clipScale  = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-    const auto& tex = mSwapchain.GetTexture(swapchainImageIndex);
     const DrawDesc drawDesc = {
         .viewport = { .offset = { 0.0f, 0.0f }, .extent = { fbWidth, fbHeight } },
-        .colorAttachments = {{ .texture = &tex, .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD }},
-        .bindings = { Binding(*mFontTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) },
+        .colorAttachments = {{ .texture = mSwapchain.GetTexture(swapchainImageIndex), .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD }},
+        .bindings = { Binding(*mFontTexture) },
         .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData }
     };
     mPipeline->Draw(cmdBuf, drawDesc, [&]() {

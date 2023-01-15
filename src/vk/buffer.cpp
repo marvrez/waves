@@ -53,30 +53,30 @@ Buffer::~Buffer()
     vmaDestroyBuffer(mDevice.Allocator(), mBuffer, mAllocation);
 }
 
-void Buffer::RecordBarrier(
-    VkCommandBuffer cmdBuf,
-    VkAccessFlags srcAccessMask,
-    VkAccessFlags dstAccessMask,
-    VkPipelineStageFlags srcStageMask,
-    VkPipelineStageFlags dstStageMask
-) const
+void Buffer::SetLayout(
+    VkCommandBuffer cmdBuf, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask
+)
 {
     const VkBufferMemoryBarrier memoryBarrier = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
         .buffer = mBuffer,
         .size = mByteSize,
-        .srcAccessMask = srcAccessMask,
+        .srcAccessMask = mAccessMask,
         .dstAccessMask = dstAccessMask,
         .srcQueueFamilyIndex = mDevice.GetSelectedQueueIndex(),
         .dstQueueFamilyIndex = mDevice.GetSelectedQueueIndex(),
     };
     vkCmdPipelineBarrier(
         cmdBuf,
-        srcStageMask,
+        mStageMask,
         dstStageMask,
         0u,
         0u, nullptr,
         1u, &memoryBarrier,
         0u, nullptr
     );
+
+    // Update the current resource state
+    mAccessMask = dstAccessMask;
+    mStageMask = dstStageMask;
 }

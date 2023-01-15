@@ -107,11 +107,7 @@ Swapchain::Swapchain(const Device& device, SwapchainDesc desc)
                 .format = mFormat,
                 .resource = swapchainImage
             });
-            mTextures.back().RecordBarrier(
-                cmdBuf,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                VK_ACCESS_NONE, VK_ACCESS_NONE
-            );
+            mTextures.back().SetResourceState(cmdBuf, ResourceStateBits::PRESENT);
         }
     });
 }
@@ -156,8 +152,8 @@ uint32_t Swapchain::AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, Vk
     return nextImageIndex;
 }
 
-const Texture& Swapchain::GetTexture(uint32_t imageIndex) const
+Texture* Swapchain::GetTexture(uint32_t imageIndex)
 {
     assert(imageIndex < mTextures.size());
-    return mTextures[imageIndex];
+    return &mTextures[imageIndex];
 }

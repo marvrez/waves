@@ -151,21 +151,24 @@ Texture::~Texture()
     }
 }
 
-void Texture::RecordBarrier(
-    VkCommandBuffer cmdBuf,
-    VkImageLayout oldLayout, VkImageLayout newLayout,
-    VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-    VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask
-) const
+VkImageLayout Texture::GetLayout() const
 {
+    const auto& state = ConvertResourceState(mResourceMask);
+    return state.imageLayout;
+}
+
+void Texture::SetResourceState(VkCommandBuffer cmdBuf, ResourceStateBits dstResourceMask)
+{
+    const auto& srcState = ConvertResourceState(mResourceMask);
+    const auto& dstState = ConvertResourceState(dstResourceMask);
     const VkImageMemoryBarrier imageMemoryBarrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .srcAccessMask = srcAccessMask,
-        .dstAccessMask = dstAccessMask,
-        .oldLayout = oldLayout,
-        .newLayout = newLayout,
+        .srcAccessMask = srcState.accessMask,
+        .dstAccessMask = dstState.accessMask,
+        .oldLayout = srcState.imageLayout,
+        .newLayout = dstState.imageLayout,
         .image = mImage,
         .subresourceRange = {
             .aspectMask = GetAspectMask(GetVkFormat(mFormat)),
@@ -177,12 +180,12 @@ void Texture::RecordBarrier(
     };
     vkCmdPipelineBarrier(
         cmdBuf,
-        srcStageMask,
-        dstStageMask,
+        srcState.stageFlags,
+        dstState.stageFlags,
         0u,
         0u, nullptr,
         0u, nullptr,
         1u, &imageMemoryBarrier
     );
-
+    mResourceMask = dstResourceMask;
 }

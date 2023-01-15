@@ -50,7 +50,7 @@ int main()
             .viewport = { .offset = { 0.0f, 0.0f }, .extent = { extent.width, extent.height } },
             .scissor = { .offset = { 0, 0 }, .extent = { extent.width, extent.height } },
             .colorAttachments = {{
-                .texture = &swapchainTexture,
+                .texture = swapchainTexture,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                 .clear = {{ 0.0f, 0 }}
             }},
@@ -73,19 +73,13 @@ int main()
             UINT64_MAX, frameState.imageAvailableSemaphore
         );
 
-        swapchain.GetTexture(swapchainImageIndex).RecordBarrier(cmdBuf,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_ACCESS_NONE, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+        swapchain.GetTexture(swapchainImageIndex)->SetResourceState(
+            cmdBuf, ResourceStateBits::RENDER_TARGET
         );
-
         drawTriangle(cmdBuf, swapchainImageIndex);
         gui.DrawFrame(cmdBuf, swapchainImageIndex, frameIndex);
-
-        swapchain.GetTexture(swapchainImageIndex).RecordBarrier(cmdBuf,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_NONE,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+        swapchain.GetTexture(swapchainImageIndex)->SetResourceState(
+            cmdBuf, ResourceStateBits::PRESENT
         );
 
         VK_CHECK(vkEndCommandBuffer(cmdBuf));

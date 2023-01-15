@@ -71,3 +71,22 @@ enum class BufferUsageBits : uint16_t {
     ARGUMENT  = SetBit(4), // Buffer will be bound as an indirect argument buffer
 };
 ENUM_CLASS_OPERATORS(BufferUsageBits);
+
+
+enum class ResourceStateBits : uint16_t {
+    NONE                   = 0,
+    COMMON                 = SetBit(0),
+    CONSTANT_BUFFER        = SetBit(1),
+    VERTEX_BUFFER          = SetBit(2),
+    INDEX_BUFFER           = SetBit(3),
+    INDIRECT_ARGUMENT      = SetBit(4),
+    SHADER_RESOURCE        = SetBit(5),
+    UNORDERED_ACCESS       = SetBit(6),
+    RENDER_TARGET          = SetBit(7),
+    DEPTH_WRITE            = SetBit(8),
+    DEPTH_READ             = SetBit(9),
+    COPY_DEST              = SetBit(10),
+    COPY_SOURCE            = SetBit(11),
+    PRESENT                = SetBit(12),
+};
+ENUM_CLASS_OPERATORS(ResourceStateBits)

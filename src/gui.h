@@ -10,7 +10,7 @@ class Swapchain;
 
 class GUI {
 public:
-    GUI(const Device& device, const Swapchain& swapchain, const Window& window);
+    GUI(const Device& device, Swapchain& swapchain, const Window& window);
     ~GUI();
 
     void NewFrame();
@@ -27,5 +27,5 @@ private:
 
     const Device& mDevice;
     const Window& mWindow;
-    const Swapchain& mSwapchain;
+    Swapchain& mSwapchain;
 };

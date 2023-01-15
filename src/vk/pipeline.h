@@ -50,7 +50,8 @@ struct PipelineDesc {
 
 union Binding {
     explicit Binding(const Buffer& buffer);
-    explicit Binding(const Texture& texture, VkImageLayout layout);
+    explicit Binding(const Texture& texture);
+    Binding() = delete;
 
     VkDescriptorImageInfo imageInfo;
     VkDescriptorBufferInfo bufferInfo;

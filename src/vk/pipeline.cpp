@@ -17,9 +17,9 @@ Binding::Binding(const Buffer& buffer)
     bufferInfo = { .buffer = buffer.GetVkBuffer(), .offset = 0u, .range = buffer.GetSizeInBytes() };
 }
 
-Binding::Binding(const Texture& texture, VkImageLayout layout)
+Binding::Binding(const Texture& texture)
 {
-    imageInfo = { .sampler = texture.GetSampler(), .imageView = texture.GetView(), .imageLayout = layout };
+    imageInfo = { .sampler = texture.GetSampler(), .imageView = texture.GetView(), .imageLayout = texture.GetLayout() };
 }
 
 static bool UpdateBindingStageFlags(std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayoutBinding binding)

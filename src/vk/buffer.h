@@ -25,13 +25,11 @@ public:
     VkDeviceSize GetSizeInBytes() const { return mByteSize; }
     void* GetMappedData() const { return mMappedData; }
 
-    void RecordBarrier(
+    void SetLayout(
         VkCommandBuffer cmdBuf,
-        VkAccessFlags srcAccessMask,
         VkAccessFlags dstAccessMask,
-        VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-    ) const;
+    );
 
 private:
     const Device& mDevice;
@@ -39,4 +37,8 @@ private:
 	VkBuffer mBuffer = VK_NULL_HANDLE;
 	VmaAllocation mAllocation = VK_NULL_HANDLE;
 	void* mMappedData = nullptr;
+
+    // ResourceStateBits mResourceMask = ResourceStateBits::COMMON;
+    VkAccessFlags mAccessMask = VK_ACCESS_NONE;
+    VkPipelineStageFlags mStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 };

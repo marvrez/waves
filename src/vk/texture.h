@@ -31,16 +31,9 @@ public:
     VkImage GetImage() const { return mImage; }
     VkSampler GetSampler() const { return mSamplerState.sampler; }
     Format GetFormat() const { return mFormat; }
+    VkImageLayout GetLayout() const;
 
-    void RecordBarrier(
-        VkCommandBuffer cmdBuf,
-        VkImageLayout oldLayout,
-        VkImageLayout newLayout,
-        VkAccessFlags srcAccessMask,
-        VkAccessFlags dstAccessMask,
-        VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-    ) const;
+    void SetResourceState(VkCommandBuffer cmdBuf, ResourceStateBits dstResourceMask);
 
 private:
     const Device& mDevice;
@@ -54,4 +47,6 @@ private:
     VkImage mImage = VK_NULL_HANDLE;
     VmaAllocation mAllocation = VK_NULL_HANDLE;
     bool mFromExistingResource = false;
+
+    ResourceStateBits mResourceMask = ResourceStateBits::COMMON;
 };

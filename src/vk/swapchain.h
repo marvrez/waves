@@ -21,7 +21,7 @@ public:
     void SubmitAndPresent(VkCommandBuffer cmdBuf, uint32_t imageIndex, FrameState frameState);
 
     uint32_t AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);
-    const Texture& GetTexture(uint32_t imageIndex) const;
+    Texture* GetTexture(uint32_t imageIndex);
 
     Format GetFormat() const { return mFormat; }
     VkExtent2D GetExtent() const { return mExtent; }

@@ -2,6 +2,8 @@
 
 #include "descs.h"
 
+#include <assert.h>
+
 constexpr VkFormat GetVkFormat(Format format)
 {
     switch (format) {
@@ -139,4 +141,94 @@ constexpr VkBufferUsageFlags GetVkBufferUsageFlags(BufferUsageBits usageMask)
     if ((usageMask & BufferUsageBits::ARGUMENT) != 0) flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     if ((usageMask & BufferUsageBits::STORAGE)  != 0) flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     return flags;
+}
+
+struct ResourceStateMapping {
+    ResourceStateBits resourceStateMask;
+    VkPipelineStageFlags stageFlags;
+    VkAccessFlags accessMask;
+    VkImageLayout imageLayout;
+};
+
+constexpr ResourceStateMapping gResourceStateMap[] =
+{
+    { ResourceStateBits::COMMON,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_ACCESS_NONE,
+        VK_IMAGE_LAYOUT_UNDEFINED },
+    { ResourceStateBits::CONSTANT_BUFFER,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_UNIFORM_READ_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED },
+    { ResourceStateBits::VERTEX_BUFFER,
+        VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+        VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED },
+    { ResourceStateBits::INDEX_BUFFER,
+        VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+        VK_ACCESS_INDEX_READ_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED },
+    { ResourceStateBits::INDIRECT_ARGUMENT,
+        VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+        VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED },
+    { ResourceStateBits::SHADER_RESOURCE,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_SHADER_READ_BIT,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+    { ResourceStateBits::UNORDERED_ACCESS,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_GENERAL },
+    { ResourceStateBits::RENDER_TARGET,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+    { ResourceStateBits::DEPTH_WRITE,
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL },
+    { ResourceStateBits::DEPTH_READ,
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+        VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL },
+    { ResourceStateBits::COPY_DEST,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL },
+    { ResourceStateBits::COPY_SOURCE,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_TRANSFER_READ_BIT,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL },
+    { ResourceStateBits::PRESENT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_MEMORY_READ_BIT,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR },
+};
+
+constexpr ResourceStateMapping ConvertResourceState(ResourceStateBits state)
+{
+    constexpr uint16_t kNumStateBits = sizeof(gResourceStateMap) / sizeof(gResourceStateMap[0]);
+
+    ResourceStateMapping result = {};
+    uint16_t stateBits = uint16_t(state);
+    uint16_t bitIndex = 0;
+    while (stateBits != 0 && bitIndex < kNumStateBits) {
+        const uint16_t bit = (1 << bitIndex);
+        if (stateBits & bit) {
+            const auto& mapping = gResourceStateMap[bitIndex];
+            assert(result.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED || mapping.imageLayout == VK_IMAGE_LAYOUT_UNDEFINED || result.imageLayout == mapping.imageLayout);
+
+            result.resourceStateMask = ResourceStateBits(result.resourceStateMask | mapping.resourceStateMask);
+            result.accessMask |= mapping.accessMask;
+            result.stageFlags |= mapping.stageFlags;
+            if (mapping.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED) result.imageLayout = mapping.imageLayout;
+
+            stateBits &= ~bit;
+        }
+        bitIndex++;
+    }
+    assert(result.resourceStateMask == state);
+
+    return result;
 }
