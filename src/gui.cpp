@@ -73,11 +73,6 @@ void GUI::CreateFontTexture()
         .height = uint32_t(textureHeight),
         .format = Format::RGBA8_UNORM,
         .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        .samplerDesc = {
-            .filterMode = VK_FILTER_LINEAR,
-            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR
-        }
     };
     mFontTexture = std::make_unique<Texture>(mDevice, texDesc);
 

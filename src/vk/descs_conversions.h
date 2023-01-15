@@ -64,3 +64,36 @@ constexpr VkFormat GetVkFormat(Format format)
     }
     return VK_FORMAT_UNDEFINED; // Shouldn't get here
 }
+
+constexpr VkFilter GetVkFilter(Filter filter)
+{
+    switch (filter) {
+        case Filter::POINT:     return VK_FILTER_NEAREST;
+        case Filter::BILINEAR:  return VK_FILTER_LINEAR;
+        case Filter::TRILINEAR: return VK_FILTER_LINEAR;
+        case Filter::COUNT:     return VK_FILTER_MAX_ENUM;
+    }
+    return (VkFilter) 0; // Shouldn't get here
+}
+
+constexpr VkSamplerMipmapMode GetVkSamplerMipMapMode(Filter filter)
+{
+    switch (filter) {
+        case Filter::POINT:     return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        case Filter::BILINEAR:  return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        case Filter::TRILINEAR: return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        case Filter::COUNT:     return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
+    }
+    return (VkSamplerMipmapMode) 0; // Shouldn't get here
+}
+
+constexpr VkSamplerAddressMode GetVkSamplerAddressMode(WrapMode wrapMode)
+{
+    switch (wrapMode) {
+        case WrapMode::WRAP:             return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        case WrapMode::CLAMP_TO_EDGE:    return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        case WrapMode::CLAMP_TO_BORDER:  return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        case WrapMode::COUNT:  return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+    }
+    return (VkSamplerAddressMode) 0; // Shouldn't get here
+}

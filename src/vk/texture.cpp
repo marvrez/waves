@@ -32,9 +32,8 @@ inline void HashCombine(std::size_t& seed, const T& v)
 static std::size_t CalculateSamplerHash(SamplerDesc desc)
 {
     std::size_t hash = 0;
-    HashCombine(hash, desc.filterMode);
-    HashCombine(hash, desc.addressMode);
-    HashCombine(hash, desc.mipmapMode);
+    HashCombine(hash, desc.filter);
+    HashCombine(hash, desc.wrapMode);
     return hash;
 }
 
@@ -49,12 +48,12 @@ static Texture::SamplerState CreateOrGetSamplerState(VkDevice device, SamplerDes
 
     const VkSamplerCreateInfo samplerCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .magFilter = desc.filterMode,
-        .minFilter = desc.filterMode,
-        .mipmapMode = desc.mipmapMode,
-        .addressModeU = desc.addressMode,
-        .addressModeV = desc.addressMode,
-        .addressModeW = desc.addressMode,
+        .magFilter = GetVkFilter(desc.filter),
+        .minFilter = GetVkFilter(desc.filter),
+        .mipmapMode = GetVkSamplerMipMapMode(desc.filter),
+        .addressModeU = GetVkSamplerAddressMode(desc.wrapMode),
+        .addressModeV = GetVkSamplerAddressMode(desc.wrapMode),
+        .addressModeW = GetVkSamplerAddressMode(desc.wrapMode),
         .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
         .maxLod = 16.0f,
         .maxAnisotropy = 8.0f,
@@ -131,7 +130,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
             )
         );
     }
-    mSamplerState = CreateOrGetSamplerState(device, desc.samplerDesc);
+    mSamplerState = CreateOrGetSamplerState(device, desc.sampler);
     mImageView = CreateImageView(device, mImage, GetVkFormat(desc.format), 0u, desc.mipCount);
 
     if (desc.layout != VK_IMAGE_LAYOUT_UNDEFINED) {

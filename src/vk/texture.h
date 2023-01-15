@@ -3,9 +3,8 @@
 #include "descs.h"
 
 struct SamplerDesc {
-    VkFilter filterMode = VK_FILTER_LINEAR;                                             // Filter mode.
-    VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;           // Address mode.
-    VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;                    // Mipmap mode.
+    Filter filter = Filter::TRILINEAR;
+    WrapMode wrapMode = WrapMode::CLAMP_TO_EDGE;
 };
 
 struct TextureDesc {
@@ -16,7 +15,7 @@ struct TextureDesc {
     VkImageUsageFlags usage = 0u;                      // Texture usage flags.
     VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;  // [Optional] Initial texture layout.
     VkAccessFlags access = VK_ACCESS_NONE;             // [Optional] Initial texture access.
-    SamplerDesc samplerDesc = {};                      // Sampler descriptor.
+    SamplerDesc sampler = {};                          // Sampler descriptor.
     VkImage swapchainImage = VK_NULL_HANDLE;           // [Optional] Usually used for swapchain images.
 };
 
