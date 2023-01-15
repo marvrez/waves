@@ -103,8 +103,7 @@ Swapchain::Swapchain(const Device& device, SwapchainDesc desc)
     device.Submit([&](VkCommandBuffer cmdBuf) {
         for (auto swapchainImage : swapchainImages) {
             mTextures.emplace_back(device, TextureDesc{
-                .width = mExtent.width,
-                .height = mExtent.height,
+                .dimensions = { mExtent.width, mExtent.height, 1u },
                 .format = mFormat,
                 .resource = swapchainImage
             });

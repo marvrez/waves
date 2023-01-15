@@ -66,8 +66,7 @@ void GUI::CreateFontTexture()
     io.Fonts->GetTexDataAsRGBA32(&fontData, &textureWidth, &textureHeight, &bytesPerPixel);
 
     const TextureDesc texDesc = {
-        .width = uint32_t(textureWidth),
-        .height = uint32_t(textureHeight),
+        .dimensions = { textureWidth, textureHeight, 1u },
         .format = Format::RGBA8_UNORM,
         .usage = TextureUsageBits::SAMPLED,
     };

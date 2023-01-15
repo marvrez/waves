@@ -8,8 +8,7 @@ struct SamplerDesc {
 };
 
 struct TextureDesc {
-    uint32_t width = 0u;                               // Texture width in pixels.
-    uint32_t height = 0u;                              // Texture height in pixels.
+    glm::uvec3 dimensions = glm::uvec3(0u);            // Texture dimensions
     uint32_t mipCount = 1u;                            // Number of mipmaps.
     Format format = Format::NONE;                      // Texture pixel format.
     TextureUsageBits usage = TextureUsageBits::NONE;   // Texture usage flags.
@@ -46,8 +45,7 @@ public:
 private:
     const Device& mDevice;
 
-    uint32_t mWidth = 0u;
-    uint32_t mHeight = 0u;
+    glm::uvec3 mDimensions;
     uint32_t mMipIndex = 0u;
     uint32_t mMipCount = 1u;
     Format mFormat = Format::NONE;

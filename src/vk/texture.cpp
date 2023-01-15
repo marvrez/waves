@@ -92,11 +92,11 @@ static VkImageView CreateImageView(
 }
 
 Texture::Texture(const Device& device, TextureDesc desc)
-    : mDevice(device), mWidth(desc.width), mHeight(desc.height), mMipIndex(0), mMipCount(desc.mipCount),
+    : mDevice(device), mDimensions(desc.dimensions), mMipIndex(0), mMipCount(desc.mipCount),
       mFormat(desc.format), mImage((VkImage)desc.resource), mFromExistingResource(desc.resource != nullptr)
 {
     assert(mMipCount > 0u);
-    assert(mWidth != 0u && mHeight != 0u);
+    assert(mDimensions.x != 0u && mDimensions.y != 0u && mDimensions.z != 0u);
     assert(mFormat != Format::NONE);
 
     if (!mFromExistingResource) {
@@ -107,9 +107,9 @@ Texture::Texture(const Device& device, TextureDesc desc)
             .imageType = VK_IMAGE_TYPE_2D,
             .format = GetVkFormat(desc.format),
             .extent = {
-                .width = desc.width,
-                .height = desc.height,
-                .depth = 1u,
+                .width = desc.dimensions.x,
+                .height = desc.dimensions.y,
+                .depth = desc.dimensions.z,
             },
             .mipLevels = desc.mipCount,
             .arrayLayers = 1u,
