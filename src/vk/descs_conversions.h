@@ -232,3 +232,31 @@ constexpr ResourceStateMapping ConvertResourceState(ResourceStateBits state)
 
     return result;
 }
+
+
+constexpr VkCompareOp GetVkCompareOp(CompareOp op)
+{
+    switch (op) {
+        case CompareOp::NEVER:              return VK_COMPARE_OP_NEVER;
+        case CompareOp::LESS:               return VK_COMPARE_OP_LESS;
+        case CompareOp::EQUAL:              return VK_COMPARE_OP_EQUAL;
+        case CompareOp::LESS_OR_EQUAL:      return VK_COMPARE_OP_LESS_OR_EQUAL;
+        case CompareOp::GREATER:            return VK_COMPARE_OP_GREATER;
+        case CompareOp::NOT_EQUAL:          return VK_COMPARE_OP_NOT_EQUAL;
+        case CompareOp::GREATER_OR_EQUAL:   return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        case CompareOp::ALWAYS:             return VK_COMPARE_OP_ALWAYS;
+        case CompareOp::COUNT:              return VK_COMPARE_OP_MAX_ENUM;
+    }
+    return VK_COMPARE_OP_MAX_ENUM; // Shouldn't get here
+}
+
+constexpr VkAttachmentLoadOp GetVkAttachmentLoadOp(LoadOp op)
+{
+    switch (op) {
+        case LoadOp::LOAD:      return VK_ATTACHMENT_LOAD_OP_LOAD;
+        case LoadOp::CLEAR:     return VK_ATTACHMENT_LOAD_OP_CLEAR;
+        case LoadOp::DONT_CARE: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        case LoadOp::COUNT:     return VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+    }
+    return VK_ATTACHMENT_LOAD_OP_MAX_ENUM; // Shouldn't get here
+}

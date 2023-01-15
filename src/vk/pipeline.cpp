@@ -243,7 +243,7 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = desc.depthStencil.shouldEnableDepthTesting,
         .depthWriteEnable = desc.depthStencil.shouldEnableDepthWrite,
-        .depthCompareOp = desc.depthStencil.depthCompareOp,
+        .depthCompareOp = GetVkCompareOp(desc.depthStencil.depthCompareOp),
         .depthBoundsTestEnable = VK_FALSE,
         .stencilTestEnable = VK_FALSE,
     };
@@ -357,7 +357,7 @@ void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = colorAttachment.texture->GetView(),
             .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-            .loadOp = colorAttachment.loadOp,
+            .loadOp = GetVkAttachmentLoadOp(colorAttachment.loadOp),
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue = { .color = colorAttachment.clear.color },
         });
@@ -384,7 +384,7 @@ void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<
     if (desc.depthStencilAttachment.texture != nullptr && desc.depthStencilAttachment.texture->GetImage() != VK_NULL_HANDLE) {
         depthAttachment.imageView = desc.depthStencilAttachment.texture->GetView();
         depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-        depthAttachment.loadOp = desc.depthStencilAttachment.loadOp;
+        depthAttachment.loadOp = GetVkAttachmentLoadOp(desc.depthStencilAttachment.loadOp);
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         depthAttachment.clearValue.depthStencil = desc.depthStencilAttachment.clear.depthStencil;
 

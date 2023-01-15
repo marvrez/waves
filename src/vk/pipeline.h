@@ -13,7 +13,7 @@ struct RasterizationDesc {
 struct DepthStencilDesc {
     bool shouldEnableDepthTesting = false;               // Enable depth testing.
     bool shouldEnableDepthWrite   = false;               // Enable writing to depth buffer.
-    VkCompareOp depthCompareOp = VK_COMPARE_OP_GREATER;  // Comparison operation for depth testing.
+    CompareOp depthCompareOp = CompareOp::GREATER;  // Comparison operation for depth testing.
 };
 
 struct ColorAttachmentDesc {
@@ -74,7 +74,7 @@ struct Scissor {
 
 struct Attachment {
     const Texture* texture = nullptr;
-    VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    LoadOp loadOp = LoadOp::DONT_CARE;
     VkClearValue clear = {};
 };
 

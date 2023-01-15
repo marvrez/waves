@@ -48,7 +48,7 @@ GUI::GUI(const Device& device, Swapchain& swapchain, const Window& window)
             }},
         },
         .rasterization = { .cullMode = CullMode::NONE },
-        .depthStencil = { .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL },
+        .depthStencil = { .depthCompareOp = CompareOp::LESS_OR_EQUAL },
         .attributeDescs = {
             { .name = "POSITION0", .format = Format::RG32_FLOAT, .offset = offsetof(ImDrawVert, pos), .stride = sizeof(ImDrawVert) },
             { .name = "TEXCOORD0", .format = Format::RG32_FLOAT, .offset = offsetof(ImDrawVert, uv), .stride = sizeof(ImDrawVert) },
@@ -192,7 +192,7 @@ void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32
 
     const DrawDesc drawDesc = {
         .viewport = { .offset = { 0.0f, 0.0f }, .extent = { fbWidth, fbHeight } },
-        .colorAttachments = {{ .texture = mSwapchain.GetTexture(swapchainImageIndex), .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD }},
+        .colorAttachments = {{ .texture = mSwapchain.GetTexture(swapchainImageIndex), .loadOp = LoadOp::LOAD }},
         .bindings = { Binding(*mFontTexture) },
         .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData }
     };

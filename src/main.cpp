@@ -50,9 +50,7 @@ int main()
             .viewport = { .offset = { 0.0f, 0.0f }, .extent = { extent.width, extent.height } },
             .scissor = { .offset = { 0, 0 }, .extent = { extent.width, extent.height } },
             .colorAttachments = {{
-                .texture = swapchainTexture,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .clear = {{ 0.0f, 0 }}
+                .texture = swapchainTexture, .loadOp = LoadOp::CLEAR, .clear = {{ 0.0f, 0 }}
             }},
         });
     };
