@@ -5,6 +5,7 @@
 #include "vk/common.h"
 #include "vk/buffer.h"
 #include "vk/texture.h"
+#include "vk/descs_conversions.h"
 
 #include "logger.h"
 #include "utils.h"
@@ -180,7 +181,7 @@ static InputLayout CreateInputLayout(const std::initializer_list<VertexAttribute
         layout.attributeDesc.push_back({
             .location = uint32_t(location),
             .binding = desc.binding,
-            .format = desc.format,
+            .format = GetVkFormat(desc.format),
             .offset = desc.offset,
         });
     }
@@ -279,13 +280,13 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
     std::vector<VkFormat> colorFormats;
     colorFormats.reserve(desc.attachmentLayout.colorAttachments.size());
     for (auto& colorAttachmentState : desc.attachmentLayout.colorAttachments) {
-        colorFormats.push_back(colorAttachmentState.format);
+        colorFormats.push_back(GetVkFormat(colorAttachmentState.format));
     }
     const VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .colorAttachmentCount = uint32_t(colorFormats.size()),
         .pColorAttachmentFormats = colorFormats.data(),
-        .depthAttachmentFormat = desc.attachmentLayout.depthStencilFormat,
+        .depthAttachmentFormat = GetVkFormat(desc.attachmentLayout.depthStencilFormat),
     };
 
     const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {

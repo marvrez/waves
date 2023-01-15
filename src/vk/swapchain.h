@@ -1,5 +1,7 @@
 #pragma once
 
+#include "descs.h"
+
 struct SwapchainDesc {
     uint32_t framebufferWidth = 0u;                // The frame buffer width
     uint32_t framebufferHeight = 0u;               // The frame buffer height
@@ -21,12 +23,12 @@ public:
     uint32_t AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);
     const Texture& GetTexture(uint32_t imageIndex) const;
 
-    VkFormat GetFormat() const { return mFormat; }
+    Format GetFormat() const { return mFormat; }
     VkExtent2D GetExtent() const { return mExtent; }
 private:
     const Device& mDevice;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
     VkExtent2D mExtent = {};
-    VkFormat mFormat = VK_FORMAT_UNDEFINED;
+    Format mFormat = Format::NONE;
     std::vector<Texture> mTextures = {};
 };

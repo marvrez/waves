@@ -10,6 +10,7 @@
 #include "vk/shader.h"
 #include "vk/pipeline.h"
 #include "vk/swapchain.h"
+#include "vk/descs.h"
 
 #include <imgui.h>
 
@@ -52,9 +53,9 @@ GUI::GUI(const Device& device, const Swapchain& swapchain, const Window& window)
         },
         .depthStencil = { .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL },
         .attributeDescs = {
-            { .name = "POSITION0", .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ImDrawVert, pos), .stride = sizeof(ImDrawVert) },
-            { .name = "TEXCOORD0", .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ImDrawVert, uv), .stride = sizeof(ImDrawVert) },
-            { .name = "COLOR0", .format = VK_FORMAT_R8G8B8A8_UNORM, .offset = offsetof(ImDrawVert, col), .stride = sizeof(ImDrawVert) },
+            { .name = "POSITION0", .format = Format::RG32_FLOAT, .offset = offsetof(ImDrawVert, pos), .stride = sizeof(ImDrawVert) },
+            { .name = "TEXCOORD0", .format = Format::RG32_FLOAT, .offset = offsetof(ImDrawVert, uv), .stride = sizeof(ImDrawVert) },
+            { .name = "COLOR0", .format = Format::RGBA8_UNORM,   .offset = offsetof(ImDrawVert, col), .stride = sizeof(ImDrawVert) },
         },
     };
     mPipeline = std::make_unique<Pipeline>(device, pipelineDesc);
@@ -70,7 +71,7 @@ void GUI::CreateFontTexture()
     const TextureDesc texDesc = {
         .width = uint32_t(textureWidth),
         .height = uint32_t(textureHeight),
-        .format = VK_FORMAT_R8G8B8A8_UNORM,
+        .format = Format::RGBA8_UNORM,
         .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         .samplerDesc = {
             .filterMode = VK_FILTER_LINEAR,

@@ -2,6 +2,7 @@
 
 #include "vk/device.h"
 #include "vk/common.h"
+#include "vk/descs_conversions.h"
 
 #include <map>
 
@@ -97,7 +98,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
 {
     assert(mMipCount > 0u);
     assert(mWidth != 0u && mHeight != 0u);
-    assert(mFormat != VK_FORMAT_UNDEFINED);
+    assert(mFormat != Format::NONE);
 
     if (!mFromSwapchain) {
         assert(desc.usage != 0u);
@@ -105,7 +106,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
         const VkImageCreateInfo imageCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType = VK_IMAGE_TYPE_2D,
-            .format = desc.format,
+            .format = GetVkFormat(desc.format),
             .extent = {
                 .width = desc.width,
                 .height = desc.height,
@@ -131,7 +132,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
         );
     }
     mSamplerState = CreateOrGetSamplerState(device, desc.samplerDesc);
-    mImageView = CreateImageView(device, mImage, desc.format, 0u, desc.mipCount);
+    mImageView = CreateImageView(device, mImage, GetVkFormat(desc.format), 0u, desc.mipCount);
 
     if (desc.layout != VK_IMAGE_LAYOUT_UNDEFINED) {
         device.Submit([&](VkCommandBuffer cmdBuf) {
@@ -178,7 +179,7 @@ void Texture::RecordBarrier(
         .newLayout = newLayout,
         .image = mImage,
         .subresourceRange = {
-            .aspectMask = GetAspectMask(mFormat),
+            .aspectMask = GetAspectMask(GetVkFormat(mFormat)),
             .baseMipLevel = mMipIndex,
             .levelCount = mMipCount,
             .baseArrayLayer = 0u,

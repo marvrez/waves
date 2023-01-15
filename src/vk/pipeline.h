@@ -1,5 +1,7 @@
 #pragma once
 
+#include "descs.h"
+
 class Device;
 class Buffer;
 class Texture;
@@ -16,18 +18,18 @@ struct DepthStencilDesc {
 };
 
 struct ColorAttachmentDesc {
-    VkFormat format = VK_FORMAT_UNDEFINED; // Color render target format.
-    bool shouldEnableBlend = false;        // Enable color blending.
+    Format format = Format::NONE;    // Color render target format.
+    bool shouldEnableBlend = false;  // Enable color blending.
 };
 
 struct AttachmentLayout {
     std::initializer_list<ColorAttachmentDesc> colorAttachments;
-    VkFormat depthStencilFormat = VK_FORMAT_UNDEFINED;
+    Format depthStencilFormat = Format::NONE;
 };
 
 struct VertexAttributeDesc {
     std::string name;
-    VkFormat format = VK_FORMAT_UNDEFINED;
+    Format format = Format::NONE;
     uint32_t binding = 0;
     uint32_t offset = 0;
     uint32_t stride = 0; // note: all strides for a given binding must be identical

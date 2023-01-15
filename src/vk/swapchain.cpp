@@ -11,11 +11,12 @@ static VkSurfaceFormatKHR SelectSwapchainSurfaceFormat(const Device& device)
 {
     const auto& availableSurfaceFormats = GetVector<VkSurfaceFormatKHR>(vkGetPhysicalDeviceSurfaceFormatsKHR, device.GetPhysicalDevice(), device.GetSurface());
     for (auto& surfaceFormat : availableSurfaceFormats) {
-        if (surfaceFormat.format == VK_FORMAT_R8G8B8A8_UNORM) {
+        if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM) {
             return surfaceFormat;
         }
     }
-    return availableSurfaceFormats[0];
+    // return availableSurfaceFormats[0];
+    throw std::runtime_error("ERROR: we only support BGRA8_UNORM for swapchains.");
 }
 
 static VkPresentModeKHR SelectSwapchainPresentMode(const Device& device, bool shouldEnableVsync)
@@ -82,12 +83,11 @@ static VkSwapchainKHR CreateSwapchain(
 }
 
 Swapchain::Swapchain(const Device& device, SwapchainDesc desc)
-    : mDevice(device)
+    : mDevice(device), mFormat(Format::BGRA8_UNORM)
 {
     const VkSurfaceFormatKHR surfaceFormat = SelectSwapchainSurfaceFormat(device);
     const VkPresentModeKHR presentMode = SelectSwapchainPresentMode(device, desc.shouldEnableVsync);
     mExtent = SelectSwapchainExtent(device, desc.framebufferWidth, desc.framebufferHeight);
-    mFormat = surfaceFormat.format;
 
     mSwapchain = CreateSwapchain(
         device,
