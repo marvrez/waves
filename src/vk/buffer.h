@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include "vk/descs.h"
 
 enum class MemoryAccess : uint8_t {
 	HOST,
@@ -10,7 +11,7 @@ enum class MemoryAccess : uint8_t {
 struct BufferDesc {
 	uint64_t byteSize = 0ull;                       // Buffer size in bytes.
 	MemoryAccess access = MemoryAccess::DEVICE;     // Buffer memory access.
-	VkBufferUsageFlags usage = 0;                   // Buffer usage flags.
+	BufferUsageBits usage = BufferUsageBits::NONE;  // Buffer usage flags.
 	void* data = nullptr;                           // [Optional] Initial buffer contents.
 };
 

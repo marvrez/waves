@@ -1,19 +1,17 @@
 #include "vk/buffer.h"
 #include "vk/device.h"
 #include "vk/common.h"
+#include "vk/descs_conversions.h"
 
 Buffer::Buffer(const Device& device, BufferDesc desc)
     : mDevice(device), mByteSize(desc.byteSize)
 {
     assert(desc.byteSize > 0u);
-    assert(desc.usage != 0u);
-
-    if (desc.data != nullptr) desc.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
     const VkBufferCreateInfo bufferCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = desc.byteSize,
-        .usage = desc.usage,
+        .usage = GetVkBufferUsageFlags(desc.usage),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     const VmaAllocationCreateInfo allocationCreateInfo = {
@@ -37,7 +35,6 @@ Buffer::Buffer(const Device& device, BufferDesc desc)
             const Buffer stagingBuffer = Buffer(device, {
                 .byteSize = desc.byteSize,
                 .access = MemoryAccess::HOST,
-                .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .data = desc.data
             });
             device.Submit([&](VkCommandBuffer cmdBuf) {

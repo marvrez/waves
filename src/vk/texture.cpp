@@ -100,7 +100,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
     assert(mFormat != Format::NONE);
 
     if (!mFromSwapchain) {
-        assert(desc.usage != 0u);
+        assert(desc.usage != TextureUsageBits::NONE);
 
         const VkImageCreateInfo imageCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -115,7 +115,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
             .arrayLayers = 1u,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .tiling = VK_IMAGE_TILING_OPTIMAL,
-            .usage = desc.usage,
+            .usage = GetVkImageUsageFlags(desc.usage),
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         };

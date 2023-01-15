@@ -69,16 +69,12 @@ void GUI::CreateFontTexture()
         .width = uint32_t(textureWidth),
         .height = uint32_t(textureHeight),
         .format = Format::RGBA8_UNORM,
-        .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .usage = TextureUsageBits::SAMPLED,
     };
     mFontTexture = std::make_unique<Texture>(mDevice, texDesc);
 
-    const VkDeviceSize uploadSizeInBytes = textureWidth * textureHeight * bytesPerPixel;
-    Buffer stagingBuffer = Buffer(mDevice, {
-        .byteSize = uploadSizeInBytes,
-        .access = MemoryAccess::HOST,
-        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-    });
+    const uint64_t uploadSizeInBytes = textureWidth * textureHeight * bytesPerPixel;
+    Buffer stagingBuffer = Buffer(mDevice, { .byteSize = uploadSizeInBytes, .access = MemoryAccess::HOST });
     memcpy(stagingBuffer.GetMappedData(), fontData, uploadSizeInBytes);
 
     mDevice.Submit([&](VkCommandBuffer cmdBuf) {
@@ -160,7 +156,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
         const BufferDesc desc = {
             .byteSize = GetAlignedSize(vertexBufferSize, 32'000ull),
             .access = MemoryAccess::HOST,
-            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+            .usage = BufferUsageBits::VERTEX
         };
         vertexBuffer = std::make_unique<Buffer>(mDevice, desc);
     }
@@ -168,7 +164,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
         const BufferDesc desc = {
             .byteSize = GetAlignedSize(indexBufferSize, 16'000ull),
             .access = MemoryAccess::HOST,
-            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+            .usage = BufferUsageBits::INDEX
         };
         indexBuffer = std::make_unique<Buffer>(mDevice, desc);
     }

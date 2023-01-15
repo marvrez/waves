@@ -2,6 +2,20 @@
 
 #include <stdint.h>
 
+#define ENUM_CLASS_OPERATORS(T) \
+    constexpr inline T operator& (T a, T b) { return static_cast<T>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b)); } \
+    constexpr inline T operator| (T a, T b) { return static_cast<T>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b)); } \
+    constexpr inline T operator~ (T a) { return static_cast<T>(~static_cast<uint32_t>(a)); } \
+    constexpr inline T& operator|= (T& a, T b) { a = a | b; return a; }; \
+    constexpr inline T& operator&= (T& a, T b) { a = a & b; return a; }; \
+    constexpr inline bool operator!(T a) { return uint32_t(a) == 0; } \
+    constexpr inline bool operator ==(T a, uint32_t b) { return static_cast<uint32_t>(a) == b; } \
+    constexpr inline bool operator !=(T a, uint32_t b) { return static_cast<uint32_t>(a) != b; } \
+    constexpr inline bool IsSet(T val, T flag) { return (val & flag) != static_cast<T>(0); } \
+    constexpr inline void FlipBit(T& val, T flag) { val = IsSet(val, flag) ? (val & (~flag)) : (val | flag); }
+
+constexpr uint32_t SetBit(uint32_t index) { return 1 << index; }
+
 enum class Format : uint16_t {
     NONE,
 
@@ -38,3 +52,22 @@ enum class Format : uint16_t {
 enum class Filter : uint8_t { POINT, BILINEAR, TRILINEAR, COUNT};
 enum class WrapMode : uint16_t { WRAP, CLAMP_TO_EDGE, CLAMP_TO_BORDER, COUNT };
 enum class CullMode : uint16_t { NONE, CCW, CW, COUNT };
+
+enum class TextureUsageBits : uint16_t {
+    NONE          = 0,
+    SAMPLED       = SetBit(0),
+    STORAGE       = SetBit(1),
+    RENDER_TARGET = SetBit(2),
+    DEPTH_STENCIL = SetBit(3)
+};
+ENUM_CLASS_OPERATORS(TextureUsageBits);
+
+enum class BufferUsageBits : uint16_t {
+    NONE      = 0,
+    VERTEX    = SetBit(0), // Buffer will be bound as a vertex buffer
+    INDEX     = SetBit(1), // Buffer will be bound as an index buffer
+    STORAGE   = SetBit(2), // Buffer will be bound as an unordered access view (i.e., read-write)
+    CONSTANT  = SetBit(3), // Buffer will be bound as a constant/uniform buffer
+    ARGUMENT  = SetBit(4), // Buffer will be bound as an indirect argument buffer
+};
+ENUM_CLASS_OPERATORS(BufferUsageBits);

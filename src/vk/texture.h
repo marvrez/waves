@@ -12,7 +12,7 @@ struct TextureDesc {
     uint32_t height = 0u;                              // Texture height in pixels.
     uint32_t mipCount = 1u;                            // Number of mipmaps.
     Format format = Format::NONE;                      // Texture pixel format.
-    VkImageUsageFlags usage = 0u;                      // Texture usage flags.
+    TextureUsageBits usage = TextureUsageBits::NONE;   // Texture usage flags.
     VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;  // [Optional] Initial texture layout.
     VkAccessFlags access = VK_ACCESS_NONE;             // [Optional] Initial texture access.
     SamplerDesc sampler = {};                          // Sampler descriptor.

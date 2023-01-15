@@ -119,3 +119,24 @@ constexpr VkFrontFace GetVkFrontFace(CullMode cullMode)
     }
     return (VkFrontFace) 0; // Shouldn't get here
 }
+
+constexpr VkImageUsageFlags GetVkImageUsageFlags(TextureUsageBits usageMask)
+{
+    VkImageUsageFlags flags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if ((uint16_t)usageMask & (uint16_t)TextureUsageBits::SAMPLED)       flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if ((uint16_t)usageMask & (uint16_t)TextureUsageBits::STORAGE)       flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+    if ((uint16_t)usageMask & (uint16_t)TextureUsageBits::RENDER_TARGET) flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if ((uint16_t)usageMask & (uint16_t)TextureUsageBits::DEPTH_STENCIL) flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    return flags;
+}
+
+constexpr VkBufferUsageFlags GetVkBufferUsageFlags(BufferUsageBits usageMask)
+{
+    VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if ((usageMask & BufferUsageBits::VERTEX)   != 0) flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    if ((usageMask & BufferUsageBits::INDEX)    != 0) flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if ((usageMask & BufferUsageBits::CONSTANT) != 0) flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    if ((usageMask & BufferUsageBits::ARGUMENT) != 0) flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if ((usageMask & BufferUsageBits::STORAGE)  != 0) flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    return flags;
+}
