@@ -8,7 +8,6 @@ const std::vector<const char*> kRequiredExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 #ifdef __APPLE__
     "VK_KHR_portability_subset",
 #endif // __APPLE__
@@ -31,8 +30,6 @@ const std::vector<const char*> kInstanceExtensions = {
 #ifdef _DEBUG
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #endif // _DEBUG
-
-    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
 };
 
 static VkInstance CreateInstance(bool enableValidationLayers)
@@ -213,7 +210,6 @@ static VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t queueInde
     const VkPhysicalDeviceVulkan13Features deviceFeatures13 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
         .dynamicRendering = VK_TRUE,
-        // .synchronization2 = VK_TRUE,
         .pNext = (void*)&deviceFeatures12,
     };
 
@@ -253,11 +249,11 @@ static VmaAllocator CreateAllocator(VkInstance instance, VkPhysicalDevice physic
         vkCreateImage,
         vkDestroyImage,
         vkCmdCopyBuffer,
-        vkGetBufferMemoryRequirements2KHR,
-        vkGetImageMemoryRequirements2KHR,
+        vkGetBufferMemoryRequirements2,
+        vkGetImageMemoryRequirements2,
         vkBindBufferMemory2KHR,
         vkBindImageMemory2KHR,
-        vkGetPhysicalDeviceMemoryProperties2KHR,
+        vkGetPhysicalDeviceMemoryProperties2,
         vkGetDeviceBufferMemoryRequirements,
         vkGetDeviceImageMemoryRequirements,
     };

@@ -282,8 +282,8 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
     for (auto& colorAttachmentState : desc.attachmentLayout.colorAttachments) {
         colorFormats.push_back(GetVkFormat(colorAttachmentState.format));
     }
-    const VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+    const VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
         .colorAttachmentCount = uint32_t(colorFormats.size()),
         .pColorAttachmentFormats = colorFormats.data(),
         .depthAttachmentFormat = GetVkFormat(desc.attachmentLayout.depthStencilFormat),
@@ -356,7 +356,7 @@ void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<
         colorAttachments.push_back({
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = colorAttachment.texture->GetView(),
-            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
             .loadOp = colorAttachment.loadOp,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue = { .color = colorAttachment.clear.color },
@@ -380,10 +380,10 @@ void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<
         .pColorAttachments = colorAttachments.data(),
     };
 
-    VkRenderingAttachmentInfoKHR depthAttachment = { VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
+    VkRenderingAttachmentInfo depthAttachment = { VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
     if (desc.depthStencilAttachment.texture != nullptr && desc.depthStencilAttachment.texture->GetImage() != VK_NULL_HANDLE) {
         depthAttachment.imageView = desc.depthStencilAttachment.texture->GetView();
-        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
         depthAttachment.loadOp = desc.depthStencilAttachment.loadOp;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         depthAttachment.clearValue.depthStencil = desc.depthStencilAttachment.clear.depthStencil;
