@@ -2,6 +2,7 @@
 
 #include "vk/device.h"
 #include "vk/common.h"
+#include "vk/command_list.h"
 
 static inline VkSemaphore CreateSemaphore(VkDevice device)
 {
@@ -26,7 +27,7 @@ FramePacingState::FramePacingState(const Device& device)
         state.imageAvailableSemaphore = CreateSemaphore(device);
         state.renderFinishedSemaphore = CreateSemaphore(device);
         state.inFlightFence = CreateFence(device);
-        state.commandBuffer = device.CreateCommandBuffer();
+        state.commandList = device.CreateCommandList();
     }
 }
 

@@ -1,13 +1,15 @@
 #pragma once
 
 class Window;
+class CommandList;
 
 class Device {
 public:
     Device(const Window& window, bool enableValidationLayer=true);
     ~Device();
-    VkCommandBuffer CreateCommandBuffer() const;
-    void Submit(std::function<void(VkCommandBuffer)> recordCmdBuffer) const;
+
+    Handle<CommandList> CreateCommandList() const;
+    void ExecuteCommandList(Handle<CommandList> cmdList) const;
 
     void WaitIdle() const;
 
@@ -17,6 +19,7 @@ public:
     VkQueue GetSelectedQueue() const { return mQueue; }
     VkSurfaceKHR GetSurface() const { return mSurface; }
     VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
+    VkCommandPool GetCommandPool() const { return mCommandPool; }
 
 private:
     VkDebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;

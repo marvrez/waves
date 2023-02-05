@@ -3,11 +3,6 @@
 #include "utils.h"
 #include "vk/descs.h"
 
-enum class MemoryAccess : uint8_t {
-	HOST,
-	DEVICE,
-};
-
 struct BufferDesc {
 	uint64_t byteSize = 0ull;                       // Buffer size in bytes.
 	MemoryAccess access = MemoryAccess::DEVICE;     // Buffer memory access.
@@ -22,14 +17,10 @@ public:
     ~Buffer();
 
     VkBuffer GetVkBuffer() const { return mBuffer; }
+	operator VkBuffer() const { return mBuffer; }
+
     VkDeviceSize GetSizeInBytes() const { return mByteSize; }
     void* GetMappedData() const { return mMappedData; }
-
-    void SetLayout(
-        VkCommandBuffer cmdBuf,
-        VkAccessFlags dstAccessMask,
-        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-    );
 
 private:
     const Device& mDevice;

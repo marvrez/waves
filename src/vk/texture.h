@@ -17,8 +17,11 @@ struct TextureDesc {
 };
 
 class Device;
+class CommandList;
 class Texture {
+friend class CommandList;
 public:
+
     struct SamplerState {
         std::size_t hash;
         VkSampler sampler;
@@ -33,7 +36,10 @@ public:
     Format GetFormat() const { return mFormat; }
     VkImageLayout GetLayout() const;
 
-    void SetResourceState(VkCommandBuffer cmdBuf, ResourceStateBits dstResourceMask);
+    glm::uvec3 GetSize() const { return mDimensions; }
+    uint32_t GetWidth() const { return mDimensions.x; }
+    uint32_t GetHeight() const { return mDimensions.y; }
+    uint32_t GetDepth() const { return mDimensions.z; }
 
 private:
     const Device& mDevice;

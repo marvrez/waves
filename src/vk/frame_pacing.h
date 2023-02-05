@@ -2,11 +2,12 @@
 
 constexpr uint32_t kMaxFramesInFlightCount = 2;
 
+class CommandList;
 struct FrameState {
     VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
     VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
     VkFence     inFlightFence           = VK_NULL_HANDLE;
-    VkCommandBuffer commandBuffer       = VK_NULL_HANDLE;
+    Handle<CommandList> commandList     = nullptr;
 };
 
 class Device;

@@ -12,11 +12,6 @@ struct GlobalSamplerState {
 };
 static std::map<std::size_t, GlobalSamplerState> gSamplerStateCache;
 
-static VkImageAspectFlags GetAspectMask(VkFormat format)
-{
-    return format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-}
-
 template <class T>
 inline void HashCombine(std::size_t& seed, const T& v)
 {
@@ -68,7 +63,7 @@ static Texture::SamplerState CreateOrGetSamplerState(VkDevice device, SamplerDes
 static VkImageView CreateImageView(
     VkDevice device,
     VkImage image,
-    VkFormat format,
+    Format format,
     uint32_t baseMipLevel,
     uint32_t levelCount
 )
@@ -77,7 +72,7 @@ static VkImageView CreateImageView(
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = format,
+        .format = GetVkFormat(format),
         .subresourceRange = {
             .aspectMask = GetAspectMask(format),
             .baseMipLevel = baseMipLevel,
@@ -131,7 +126,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
         );
     }
     mSamplerState = CreateOrGetSamplerState(device, desc.sampler);
-    mImageView = CreateImageView(device, mImage, GetVkFormat(desc.format), 0u, desc.mipCount);
+    mImageView = CreateImageView(device, mImage, desc.format, 0u, desc.mipCount);
 }
 
 Texture::~Texture()
@@ -155,37 +150,4 @@ VkImageLayout Texture::GetLayout() const
 {
     const auto& state = ConvertResourceState(mResourceMask);
     return state.imageLayout;
-}
-
-void Texture::SetResourceState(VkCommandBuffer cmdBuf, ResourceStateBits dstResourceMask)
-{
-    const auto& srcState = ConvertResourceState(mResourceMask);
-    const auto& dstState = ConvertResourceState(dstResourceMask);
-    const VkImageMemoryBarrier imageMemoryBarrier = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .srcAccessMask = srcState.accessMask,
-        .dstAccessMask = dstState.accessMask,
-        .oldLayout = srcState.imageLayout,
-        .newLayout = dstState.imageLayout,
-        .image = mImage,
-        .subresourceRange = {
-            .aspectMask = GetAspectMask(GetVkFormat(mFormat)),
-            .baseMipLevel = mMipIndex,
-            .levelCount = mMipCount,
-            .baseArrayLayer = 0u,
-            .layerCount = 1u,
-        },
-    };
-    vkCmdPipelineBarrier(
-        cmdBuf,
-        srcState.stageFlags,
-        dstState.stageFlags,
-        0u,
-        0u, nullptr,
-        0u, nullptr,
-        1u, &imageMemoryBarrier
-    );
-    mResourceMask = dstResourceMask;
 }

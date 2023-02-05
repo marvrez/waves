@@ -67,6 +67,11 @@ constexpr VkFormat GetVkFormat(Format format)
     return VK_FORMAT_UNDEFINED; // Shouldn't get here
 }
 
+static VkImageAspectFlags GetAspectMask(Format format)
+{
+    return format == Format::D32_FLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
 constexpr VkFilter GetVkFilter(Filter filter)
 {
     switch (filter) {

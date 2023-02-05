@@ -1,5 +1,6 @@
 #include "vk/buffer.h"
 #include "vk/device.h"
+#include "vk/command_list.h"
 #include "vk/common.h"
 #include "vk/descs_conversions.h"
 
@@ -37,10 +38,11 @@ Buffer::Buffer(const Device& device, BufferDesc desc)
                 .access = MemoryAccess::HOST,
                 .data = desc.data
             });
-            device.Submit([&](VkCommandBuffer cmdBuf) {
-                const VkBufferCopy copyRegion = { .size = desc.byteSize };
-                vkCmdCopyBuffer(cmdBuf, stagingBuffer.GetVkBuffer(), mBuffer, 1, &copyRegion);
-            });
+            Handle<CommandList> cmdList = device.CreateCommandList();
+            cmdList->Open();
+            cmdList->CopyBuffer(this, 0, stagingBuffer, 0, desc.byteSize);
+            cmdList->Close();
+            device.ExecuteCommandList(cmdList);
         }
     }
 }
@@ -51,32 +53,4 @@ Buffer::~Buffer()
         vmaUnmapMemory(mDevice.Allocator(), mAllocation);
     }
     vmaDestroyBuffer(mDevice.Allocator(), mBuffer, mAllocation);
-}
-
-void Buffer::SetLayout(
-    VkCommandBuffer cmdBuf, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStageMask
-)
-{
-    const VkBufferMemoryBarrier memoryBarrier = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-        .buffer = mBuffer,
-        .size = mByteSize,
-        .srcAccessMask = mAccessMask,
-        .dstAccessMask = dstAccessMask,
-        .srcQueueFamilyIndex = mDevice.GetSelectedQueueIndex(),
-        .dstQueueFamilyIndex = mDevice.GetSelectedQueueIndex(),
-    };
-    vkCmdPipelineBarrier(
-        cmdBuf,
-        mStageMask,
-        dstStageMask,
-        0u,
-        0u, nullptr,
-        1u, &memoryBarrier,
-        0u, nullptr
-    );
-
-    // Update the current resource state
-    mAccessMask = dstAccessMask;
-    mStageMask = dstStageMask;
 }

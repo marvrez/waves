@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <math.h>
 
 #define ENUM_CLASS_OPERATORS(T) \
     constexpr inline T operator& (T a, T b) { return static_cast<T>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b)); } \
@@ -49,6 +50,9 @@ enum class Format : uint16_t {
     COUNT
 };
 
+
+enum class MemoryAccess : uint8_t { HOST, DEVICE, };
+enum class PipelineType : uint8_t { COMPUTE, GRAPHICS };
 enum class Filter : uint8_t { POINT, BILINEAR, TRILINEAR, COUNT};
 enum class WrapMode : uint16_t { WRAP, CLAMP_TO_EDGE, CLAMP_TO_BORDER, COUNT };
 enum class CullMode : uint16_t { NONE, CCW, CW, COUNT };
@@ -102,3 +106,47 @@ enum class ResourceStateBits : uint16_t {
     PRESENT                = SetBit(12),
 };
 ENUM_CLASS_OPERATORS(ResourceStateBits)
+
+struct Viewport {
+    float minX, maxX;
+    float minY, maxY;
+    float minZ, maxZ;
+
+    Viewport() : minX(0.f), maxX(0.f), minY(0.f), maxY(0.f), minZ(0.f), maxZ(1.f) { }
+    Viewport(float width, float height) : minX(0.f), maxX(width), minY(0.f), maxY(height), minZ(0.f), maxZ(1.f) { }
+    Viewport(float _minX, float _maxX, float _minY, float _maxY, float _minZ, float _maxZ)
+        : minX(_minX), maxX(_maxX), minY(_minY), maxY(_maxY), minZ(_minZ), maxZ(_maxZ)
+    {}
+
+    bool operator==(const Viewport& b) const
+    {
+        return minX == b.minX && minY == b.minY && minZ == b.minZ &&
+               maxX == b.maxX && maxY == b.maxY && maxZ == b.maxZ;
+    }
+    bool operator !=(const Viewport& b) const { return !(*this == b); }
+
+    float width() const { return maxX - minX; }
+    float height() const { return maxY - minY; }
+};
+
+struct Rect {
+    int minX, maxX;
+    int minY, maxY;
+
+    Rect() : minX(0), maxX(0), minY(0), maxY(0) { }
+    Rect(int width, int height) : minX(0), maxX(width), minY(0), maxY(height) { }
+    Rect(int _minX, int _maxX, int _minY, int _maxY) : minX(_minX), maxX(_maxX), minY(_minY), maxY(_maxY) { }
+    explicit Rect(const Viewport& viewport)
+        : minX(int(floorf(viewport.minX))) , maxX(int(ceilf(viewport.maxX)))
+        , minY(int(floorf(viewport.minY))) , maxY(int(ceilf(viewport.maxY)))
+    {
+    }
+
+    bool operator==(const Rect& b) const {
+        return minX == b.minX && minY == b.minY && maxX == b.maxX && maxY == b.maxY;
+    }
+    bool operator !=(const Rect& b) const { return !(*this == b); }
+
+    [[nodiscard]] int width() const { return maxX - minX; }
+    [[nodiscard]] int height() const { return maxY - minY; }
+};

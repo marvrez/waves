@@ -3,6 +3,7 @@
 #include "vk/device.h"
 #include "vk/common.h"
 #include "vk/frame_pacing.h"
+#include "vk/command_list.h"
 #include "vk/texture.h"
 
 #include "logger.h"
@@ -100,16 +101,18 @@ Swapchain::Swapchain(const Device& device, SwapchainDesc desc)
 
     auto swapchainImages = GetVector<VkImage>(vkGetSwapchainImagesKHR, (VkDevice)mDevice, mSwapchain);
     mTextures.reserve(swapchainImages.size());
-    device.Submit([&](VkCommandBuffer cmdBuf) {
-        for (auto swapchainImage : swapchainImages) {
-            mTextures.emplace_back(device, TextureDesc{
-                .dimensions = { mExtent.width, mExtent.height, 1u },
-                .format = mFormat,
-                .resource = swapchainImage
-            });
-            mTextures.back().SetResourceState(cmdBuf, ResourceStateBits::PRESENT);
-        }
-    });
+    Handle<CommandList> cmdList = device.CreateCommandList();
+    cmdList->Open();
+    for (auto swapchainImage : swapchainImages) {
+        mTextures.emplace_back(device, TextureDesc{
+            .dimensions = { mExtent.width, mExtent.height, 1u },
+            .format = mFormat,
+            .resource = swapchainImage
+        });
+        cmdList->SetResourceState(mTextures.back(), ResourceStateBits::PRESENT);
+    }
+    cmdList->Close();
+    device.ExecuteCommandList(cmdList);
 }
 
 Swapchain::~Swapchain()
@@ -119,9 +122,10 @@ Swapchain::~Swapchain()
     vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
 }
 
-void Swapchain::SubmitAndPresent(VkCommandBuffer cmdBuf, uint32_t imageIndex, FrameState frameState)
+void Swapchain::SubmitAndPresent(Handle<CommandList> cmdList, uint32_t imageIndex, FrameState frameState)
 {
     const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    const VkCommandBuffer cmdBuf = cmdList->GetCommandBuffer();
     const VkSubmitInfo submitInfo = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1u,
@@ -145,10 +149,10 @@ void Swapchain::SubmitAndPresent(VkCommandBuffer cmdBuf, uint32_t imageIndex, Fr
     VK_CHECK(vkQueuePresentKHR(mDevice.GetSelectedQueue(), &presentInfo));
 }
 
-uint32_t Swapchain::AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence)
+uint32_t Swapchain::AcquireNextImage(uint64_t timeout, FrameState frameState)
 {
     uint32_t nextImageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(mDevice, mSwapchain, timeout, semaphore, fence, &nextImageIndex));
+    VK_CHECK(vkAcquireNextImageKHR(mDevice, mSwapchain, timeout, frameState.imageAvailableSemaphore, VK_NULL_HANDLE, &nextImageIndex));
     return nextImageIndex;
 }
 

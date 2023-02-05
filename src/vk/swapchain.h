@@ -14,17 +14,18 @@ struct SwapchainDesc {
 class Device;
 class FrameState;
 class Texture;
+class CommandList;
 class Swapchain {
 public:
     Swapchain(const Device& device, SwapchainDesc desc);
     ~Swapchain();
-    void SubmitAndPresent(VkCommandBuffer cmdBuf, uint32_t imageIndex, FrameState frameState);
+    void SubmitAndPresent(Handle<CommandList> cmdList, uint32_t imageIndex, FrameState frameState);
 
-    uint32_t AcquireNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);
+    uint32_t AcquireNextImage(uint64_t timeout, FrameState frameState);
     Texture* GetTexture(uint32_t imageIndex);
 
     Format GetFormat() const { return mFormat; }
-    VkExtent2D GetExtent() const { return mExtent; }
+    Viewport GetViewport() const { return Viewport(mExtent.width, mExtent.height); }
 private:
     const Device& mDevice;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;

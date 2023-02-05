@@ -7,25 +7,26 @@ class Buffer;
 class Pipeline;
 class Texture;
 class Swapchain;
+class CommandList;
 
 class GUI {
 public:
-    GUI(const Device& device, Swapchain& swapchain, const Window& window);
+    GUI(const Device& device, const Swapchain& swapchain, const Window& window);
     ~GUI();
 
     void NewFrame();
-    void DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32_t frameIndex);
+    void DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, uint32_t frameIndex);
 
 private:
     void CreateFontTexture();
     void UpdateBuffers(uint32_t frameIndex);
 
-    std::unique_ptr<Pipeline> mPipeline;
-    std::unique_ptr<Texture> mFontTexture;
-    std::array<std::unique_ptr<Buffer>, 2> mVertexBuffers;
-    std::array<std::unique_ptr<Buffer>, 2> mIndexBuffers;
+    Handle<Pipeline> mPipeline;
+    Handle<Texture> mFontTexture;
+    std::array<Handle<Buffer>, 2> mVertexBuffers;
+    std::array<Handle<Buffer>, 2> mIndexBuffers;
 
     const Device& mDevice;
     const Window& mWindow;
-    Swapchain& mSwapchain;
+    const Swapchain& mSwapchain;
 };

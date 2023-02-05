@@ -1,5 +1,6 @@
 #include "vk/device.h"
 #include "vk/common.h"
+#include "vk/command_list.h"
 
 #include "window.h"
 #include "utils.h"
@@ -321,41 +322,21 @@ Device::~Device()
     vkDestroyInstance(mInstance, nullptr);
 }
 
-VkCommandBuffer Device::CreateCommandBuffer() const
+Handle<CommandList> Device::CreateCommandList() const
 {
-    VkCommandBuffer commandBuffer;
-    VkCommandBufferAllocateInfo allocInfo = { 
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandPool = mCommandPool,
-        .commandBufferCount = 1
-    };
-    VK_CHECK(vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer));
-    return commandBuffer;
+    return CreateHandle<CommandList>(*this);
 }
 
-void Device::Submit(std::function<void(VkCommandBuffer)> recordCmdBuffer) const
+void Device::ExecuteCommandList(Handle<CommandList> cmdList) const
 {
-    VkCommandBuffer commandBuffer = this->CreateCommandBuffer();
-
-    // Record commands
-    const VkCommandBufferBeginInfo beginInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-    };
-    VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-    recordCmdBuffer(commandBuffer);
-    VK_CHECK(vkEndCommandBuffer(commandBuffer));
-
+    VkCommandBuffer cmdBuf = cmdList->GetCommandBuffer();
     const VkSubmitInfo submitInfo = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = 1,
-        .pCommandBuffers = &commandBuffer,
+        .pCommandBuffers = &cmdBuf,
     };
     VK_CHECK(vkQueueSubmit(mQueue, 1, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vkQueueWaitIdle(mQueue));
-
-    vkFreeCommandBuffers(mDevice, mCommandPool, 1, &commandBuffer);
 }
 
 void Device::WaitIdle() const

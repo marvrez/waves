@@ -6,21 +6,12 @@
 #include "vk/buffer.h"
 #include "vk/texture.h"
 #include "vk/descs_conversions.h"
+#include "vk/command_list.h"
 
 #include "logger.h"
 #include "utils.h"
 
 #include <unordered_map>
-
-Binding::Binding(const Buffer& buffer)
-{
-    bufferInfo = { .buffer = buffer.GetVkBuffer(), .offset = 0u, .range = buffer.GetSizeInBytes() };
-}
-
-Binding::Binding(const Texture& texture)
-{
-    imageInfo = { .sampler = texture.GetSampler(), .imageView = texture.GetView(), .imageLayout = texture.GetLayout() };
-}
 
 static bool UpdateBindingStageFlags(std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayoutBinding binding)
 {
@@ -67,8 +58,8 @@ static VkPushConstantRange MergePushConstants(const std::vector<Shader*>& shader
 static VkPipelineBindPoint GetPipelineBindPoint(PipelineType type)
 {
     switch (type) {
-        case PipelineType::Compute: return VK_PIPELINE_BIND_POINT_COMPUTE;
-        case PipelineType::Graphics: return VK_PIPELINE_BIND_POINT_GRAPHICS;
+        case PipelineType::COMPUTE: return VK_PIPELINE_BIND_POINT_COMPUTE;
+        case PipelineType::GRAPHICS: return VK_PIPELINE_BIND_POINT_GRAPHICS;
     }
     LOG_ERROR("Unknown pipeline type '{}' was provided", uint32_t(type));
     assert(0);
@@ -314,7 +305,7 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
 }
 
 Pipeline::Pipeline(const Device& device, const PipelineDesc& desc)
-    : mDevice(device), mBindPoint(GetPipelineBindPoint(desc.type)), mPushConstants(MergePushConstants(desc.shaders))
+    : mDevice(device), mDesc(desc), mBindPoint(GetPipelineBindPoint(desc.type)), mPushConstants(MergePushConstants(desc.shaders))
 {
     const std::vector<VkDescriptorSetLayoutBinding> layoutBindings = MergeSetLayoutBindings(desc.shaders);
     mSetLayout = CreateDescriptorSetLayout(mDevice, layoutBindings);
@@ -323,12 +314,12 @@ Pipeline::Pipeline(const Device& device, const PipelineDesc& desc)
         mUpdateTemplate = CreateDescriptorUpdateTemplate(mDevice, mSetLayout, mPipelineLayout, mBindPoint, layoutBindings);
     }
 
-    if (desc.type == PipelineType::Compute) {
+    if (desc.type == PipelineType::COMPUTE) {
         assert(desc.shaders.size() == 1);
         const auto& shader = *desc.shaders[0];
         mPipeline = CreateComputePipeline(mDevice, mPipelineLayout, shader);
     }
-    else if (desc.type == PipelineType::Graphics) {
+    else if (desc.type == PipelineType::GRAPHICS) {
         mPipeline = CreateGraphicsPipeline(mDevice, mPipelineLayout, desc);
     }
     else {
@@ -345,87 +336,17 @@ Pipeline::~Pipeline()
     vkDestroyDescriptorSetLayout(mDevice, mSetLayout, nullptr);
 }
 
-void Pipeline::Draw(VkCommandBuffer cmdBuf, const DrawDesc& desc, std::function<void()> recordingCallback) const
+void Pipeline::Bind(CommandList* cmdList) const
 {
-    assert (mBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS);
+    vkCmdBindPipeline(*cmdList, mBindPoint, mPipeline);
+}
 
-    std::vector<VkRenderingAttachmentInfo> colorAttachments;
-    colorAttachments.reserve(desc.colorAttachments.size());
-    for (const auto& colorAttachment : desc.colorAttachments) {
-        assert(colorAttachment.texture->GetImage() != VK_NULL_HANDLE);
-        colorAttachments.push_back({
-            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView = colorAttachment.texture->GetView(),
-            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-            .loadOp = GetVkAttachmentLoadOp(colorAttachment.loadOp),
-            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue = { .color = colorAttachment.clear.color },
-        });
-    }
+void Pipeline::PushConstants(CommandList* cmdList, uint32_t byteSize, void* data) const
+{
+    vkCmdPushConstants(*cmdList, mPipelineLayout, mPushConstants.stageFlags, 0u, byteSize, data);
+}
 
-    VkRenderingInfo renderingInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .layerCount = 1,
-        .renderArea = {
-            .offset = {
-                .x = int32_t(desc.viewport.offset.x),
-                .y = int32_t(desc.viewport.offset.y),
-            },
-            .extent = {
-                .width = uint32_t(desc.viewport.extent.x),
-                .height = uint32_t(desc.viewport.extent.y),
-            },
-        },
-        .colorAttachmentCount = uint32_t(colorAttachments.size()),
-        .pColorAttachments = colorAttachments.data(),
-    };
-
-    VkRenderingAttachmentInfo depthAttachment = { VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
-    if (desc.depthStencilAttachment.texture != nullptr && desc.depthStencilAttachment.texture->GetImage() != VK_NULL_HANDLE) {
-        depthAttachment.imageView = desc.depthStencilAttachment.texture->GetView();
-        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-        depthAttachment.loadOp = GetVkAttachmentLoadOp(desc.depthStencilAttachment.loadOp);
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depthAttachment.clearValue.depthStencil = desc.depthStencilAttachment.clear.depthStencil;
-
-        renderingInfo.pDepthAttachment = &depthAttachment;
-    }
-
-    vkCmdBeginRenderingKHR(cmdBuf, &renderingInfo);
-
-    if (desc.viewport.extent.x != 0.0f && desc.viewport.extent.y != 0.0f) {
-        const VkViewport viewport = {
-            .x = desc.viewport.offset.x, .y = desc.viewport.offset.y,
-            .width = desc.viewport.extent.x, .height = desc.viewport.extent.y,
-            .minDepth = 0.0f, .maxDepth = 1.0f
-        };
-        vkCmdSetViewport(cmdBuf, 0u, 1u, &viewport);
-    }
-
-    if (desc.scissor.extent.x != 0u && desc.scissor.extent.y != 0u) {
-        const VkRect2D scissorRect = {
-            .offset = { .x = desc.scissor.offset.x, .y = desc.scissor.offset.y },
-            .extent = { .width = desc.scissor.extent.x, .height = desc.scissor.extent.y }
-        };
-        vkCmdSetScissor(cmdBuf, 0u, 1u, &scissorRect);
-    }
-
-    const auto& pushConstants = desc.pushConstants;
-    if (pushConstants.byteSize != 0u && pushConstants.data != nullptr) {
-        vkCmdPushConstants(
-            cmdBuf, mPipelineLayout, mPushConstants.stageFlags, 0u, pushConstants.byteSize, pushConstants.data
-        );
-    }
-
-    if(desc.bindings.size() > 0) {
-        vkCmdPushDescriptorSetWithTemplateKHR(cmdBuf, mUpdateTemplate, mPipelineLayout, 0, desc.bindings.begin());
-    }
-    vkCmdBindPipeline(cmdBuf, mBindPoint, mPipeline);
-
-    recordingCallback();
-
-    const auto& args = desc.drawArguments;
-    // vkCmdDraw(cmdBuf, args.vertexCount, args.instanceCount, args.startVertexLocation, args.startInstanceLocation);
-
-    vkCmdEndRenderingKHR(cmdBuf);
+void Pipeline::PushDescriptorSet(CommandList* cmdList, uint32_t set, void* bindingData) const
+{
+    vkCmdPushDescriptorSetWithTemplateKHR(*cmdList, mUpdateTemplate, mPipelineLayout, set, bindingData);
 }

@@ -14,3 +14,12 @@
 #include <filesystem>
 #include <sstream>
 #include <memory>
+
+template <typename T>
+using Handle = std::shared_ptr<T>;
+
+template<typename T, typename ...Args>
+constexpr Handle<T> CreateHandle(Args&& ... args)
+{
+    return std::make_shared<T>(std::forward<Args>(args)...);
+}

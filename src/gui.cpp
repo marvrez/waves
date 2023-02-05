@@ -5,6 +5,7 @@
 
 #include "vk/device.h"
 #include "vk/texture.h"
+#include "vk/command_list.h"
 #include "vk/buffer.h"
 #include "vk/common.h"
 #include "vk/shader.h"
@@ -19,7 +20,7 @@ struct PushConstantData {
     glm::vec2 translate;
 };
 
-GUI::GUI(const Device& device, Swapchain& swapchain, const Window& window)
+GUI::GUI(const Device& device, const Swapchain& swapchain, const Window& window)
     : mDevice(device), mWindow(window), mSwapchain(swapchain)
 {
     const auto [windowWidth, windowHeight] = window.GetWindowSize();
@@ -39,7 +40,7 @@ GUI::GUI(const Device& device, Swapchain& swapchain, const Window& window)
     Shader imguiVS = Shader(device, "imgui.vs.spv");
     Shader imguiPS = Shader(device, "imgui.ps.spv");
     const PipelineDesc pipelineDesc = {
-        .type = PipelineType::Graphics,
+        .type = PipelineType::GRAPHICS,
         .shaders = { &imguiVS, &imguiPS },
         .attachmentLayout = {
             .colorAttachments = {{
@@ -55,7 +56,7 @@ GUI::GUI(const Device& device, Swapchain& swapchain, const Window& window)
             { .name = "COLOR0", .format = Format::RGBA8_UNORM,   .offset = offsetof(ImDrawVert, col), .stride = sizeof(ImDrawVert) },
         },
     };
-    mPipeline = std::make_unique<Pipeline>(device, pipelineDesc);
+    mPipeline = CreateHandle<Pipeline>(device, pipelineDesc);
 }
 
 void GUI::CreateFontTexture()
@@ -65,32 +66,26 @@ void GUI::CreateFontTexture()
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->GetTexDataAsRGBA32(&fontData, &textureWidth, &textureHeight, &bytesPerPixel);
 
+    const uint64_t uploadSizeInBytes = textureWidth * textureHeight * bytesPerPixel;
+    Buffer stagingBuffer = Buffer(mDevice, { .byteSize = uploadSizeInBytes, .access = MemoryAccess::HOST });
+    memcpy(stagingBuffer.GetMappedData(), fontData, uploadSizeInBytes);
+
+    Handle<CommandList> cmdList = mDevice.CreateCommandList();
+    cmdList->Open();
+
     const TextureDesc texDesc = {
         .dimensions = { textureWidth, textureHeight, 1u },
         .format = Format::RGBA8_UNORM,
         .usage = TextureUsageBits::SAMPLED,
     };
-    mFontTexture = std::make_unique<Texture>(mDevice, texDesc);
+    mFontTexture = CreateHandle<Texture>(mDevice, texDesc);
 
-    const uint64_t uploadSizeInBytes = textureWidth * textureHeight * bytesPerPixel;
-    Buffer stagingBuffer = Buffer(mDevice, { .byteSize = uploadSizeInBytes, .access = MemoryAccess::HOST });
-    memcpy(stagingBuffer.GetMappedData(), fontData, uploadSizeInBytes);
+    cmdList->SetResourceState(*mFontTexture, ResourceStateBits::COPY_DEST);
+    cmdList->WriteTexture(mFontTexture.get(), stagingBuffer);
+    cmdList->SetResourceState(*mFontTexture, ResourceStateBits::SHADER_RESOURCE);
 
-    mDevice.Submit([&](VkCommandBuffer cmdBuf) {
-        mFontTexture->SetResourceState(cmdBuf, ResourceStateBits::COPY_DEST);
-        const VkBufferImageCopy bufferCopyRegion{
-            .imageSubresource = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = 1 },
-            .imageExtent = { .width = uint32_t(textureWidth), .height = uint32_t(textureHeight), .depth = 1 }
-        };
-        vkCmdCopyBufferToImage(
-            cmdBuf,
-            stagingBuffer.GetVkBuffer(),
-            mFontTexture->GetImage(),
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &bufferCopyRegion
-        );
-        mFontTexture->SetResourceState(cmdBuf, ResourceStateBits::SHADER_RESOURCE);
-    });
+    cmdList->Close();
+    mDevice.ExecuteCommandList(cmdList);
 }
 
 GUI::~GUI()
@@ -147,7 +142,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
             .access = MemoryAccess::HOST,
             .usage = BufferUsageBits::VERTEX
         };
-        vertexBuffer = std::make_unique<Buffer>(mDevice, desc);
+        vertexBuffer = CreateHandle<Buffer>(mDevice, desc);
     }
     if (indexBuffer == nullptr || indexBuffer->GetSizeInBytes() < indexBufferSize) {
         const BufferDesc desc = {
@@ -155,7 +150,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
             .access = MemoryAccess::HOST,
             .usage = BufferUsageBits::INDEX
         };
-        indexBuffer = std::make_unique<Buffer>(mDevice, desc);
+        indexBuffer = CreateHandle<Buffer>(mDevice, desc);
     }
 
     ImDrawVert* vertexData = (ImDrawVert*)vertexBuffer->GetMappedData();
@@ -169,7 +164,7 @@ void GUI::UpdateBuffers(uint32_t frameIndex)
     }
 }
 
-void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32_t frameIndex)
+void GUI::DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, uint32_t frameIndex)
 {
     this->UpdateBuffers(frameIndex);
     const auto& vertexBuffer = mVertexBuffers[frameIndex];
@@ -189,47 +184,43 @@ void GUI::DrawFrame(VkCommandBuffer cmdBuf, uint32_t swapchainImageIndex, uint32
     // These clip variables are used to project scissor/clipping rectangles into framebuffer space
     const ImVec2 clipOffset = drawData->DisplayPos;       // (0,0) unless using multi-viewports
     const ImVec2 clipScale  = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+    if (drawData->CmdListsCount <= 0) return;
 
-    const DrawDesc drawDesc = {
-        .viewport = { .offset = { 0.0f, 0.0f }, .extent = { fbWidth, fbHeight } },
-        .colorAttachments = {{ .texture = mSwapchain.GetTexture(swapchainImageIndex), .loadOp = LoadOp::LOAD }},
+    GraphicsState state = {
+        .pipeline = mPipeline,
+        .viewport = Viewport(fbWidth, fbHeight),
+        .colorAttachments = {{ .texture = &renderTarget, .loadOp = LoadOp::LOAD }},
         .bindings = { Binding(*mFontTexture) },
-        .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData }
+        .vertexBuffer = vertexBuffer,
+        .indexBuffer = indexBuffer,
+        .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData },
     };
-    mPipeline->Draw(cmdBuf, drawDesc, [&]() {
-        int globalIndexOffset = 0, globalVertexOffset = 0;
-        if (drawData->CmdListsCount > 0) {
-            const VkBuffer vertexBuffers[] = { vertexBuffer->GetVkBuffer() };
-            const VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(cmdBuf, indexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
-            for (int listIdx = 0; listIdx < drawData->CmdListsCount; ++listIdx) {
-                const ImDrawList* cmdList = drawData->CmdLists[listIdx];
-                for (int bufIdx = 0; bufIdx < cmdList->CmdBuffer.Size; ++bufIdx) {
-                    const ImDrawCmd* drawCmd = &cmdList->CmdBuffer[bufIdx];
 
-                    // Project scissor/clipping rectangles into framebuffer space and
-                    // clamp to viewport as vkCmdSetScissor() doesn't accept values that are off bounds
-                    const ImVec2 clipMin(
-                        std::max((drawCmd->ClipRect.x - clipOffset.x) * clipScale.x, 0.0f),
-                        std::max((drawCmd->ClipRect.y - clipOffset.y) * clipScale.y, 0.0f)
-                    );
-                    const ImVec2 clipMax(
-                        std::min((drawCmd->ClipRect.z - clipOffset.x) * clipScale.x, float(fbWidth)),
-                        std::min((drawCmd->ClipRect.w - clipOffset.y) * clipScale.y, float(fbHeight))
-                    );
-                    if (clipMax.x <= clipMin.x || clipMax.y <= clipMin.y) continue;
+    int globalIndexOffset = 0, globalVertexOffset = 0;
+    for (int listIdx = 0; listIdx < drawData->CmdListsCount; ++listIdx) {
+        const ImDrawList* imCmdList = drawData->CmdLists[listIdx];
+        for (int bufIdx = 0; bufIdx < imCmdList->CmdBuffer.Size; ++bufIdx) {
+            const ImDrawCmd* drawCmd = &imCmdList->CmdBuffer[bufIdx];
 
-                    const VkRect2D scissorRect = {
-                        .offset = { .x = int32_t(clipMin.x), .y = int32_t(clipMin.y) },
-                        .extent = { .width = uint32_t(clipMax.x - clipMin.x), .height = uint32_t(clipMax.y - clipMin.y) }
-                    };
-                    vkCmdSetScissor(cmdBuf, 0, 1, &scissorRect);
-                    vkCmdDrawIndexed(cmdBuf, drawCmd->ElemCount, 1, drawCmd->IdxOffset + globalIndexOffset, drawCmd->VtxOffset + globalVertexOffset, 0);
-                }
-                globalIndexOffset += cmdList->IdxBuffer.Size;
-                globalVertexOffset += cmdList->VtxBuffer.Size;
-            }
+            // Project scissor/clipping rectangles into framebuffer space and
+            // clamp to viewport as Vulkan doesn't accept scissor rects that are off bounds
+            const Rect scissorRect = Rect(
+                (int)std::max((drawCmd->ClipRect.x - clipOffset.x) * clipScale.x, 0.0f), // minX
+                (int)std::min((drawCmd->ClipRect.z - clipOffset.x) * clipScale.x, float(fbWidth)), // maxX
+                (int)std::max((drawCmd->ClipRect.y - clipOffset.y) * clipScale.y, 0.0f), // minY
+                (int)std::min((drawCmd->ClipRect.w - clipOffset.y) * clipScale.y, float(fbHeight)) // maxY
+            );
+            if (scissorRect.maxX <= scissorRect.minX || scissorRect.maxY <= scissorRect.minY) continue;
+            state.viewport.scissorRect = scissorRect;
+
+            cmdList->SetGraphicsState(state);
+            cmdList->DrawIndexed({
+                .vertexCount = drawCmd->ElemCount,
+                .startVertexLocation = drawCmd->VtxOffset + globalVertexOffset,
+                .startIndexLocation = drawCmd->IdxOffset + globalIndexOffset,
+            });
         }
-    });
+        globalIndexOffset += imCmdList->IdxBuffer.Size;
+        globalVertexOffset += imCmdList->VtxBuffer.Size;
+    }
 }
