@@ -67,6 +67,13 @@ struct GraphicsState {
     Handle<Buffer> indirectParams = nullptr;
 };
 
+struct ComputeState {
+    Handle<Pipeline> pipeline = nullptr;
+
+    BindingList bindings = {};
+    PushConstants pushConstants = {};
+};
+
 class CommandList {
 public:
     CommandList(const Device& device);
@@ -79,11 +86,14 @@ public:
     void Draw(const DrawArguments& args);
     void DrawIndexed(const DrawArguments& args);
 
+    void Dispatch(uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1);
+
     void CopyBuffer(Buffer* dest, uint64_t destOffsetBytes, const Buffer& src, uint64_t srcOffsetBytes, uint64_t dataSizeBytes);
 
     void WriteTexture(Texture* dest, const Buffer& src);
 
     void SetGraphicsState(const GraphicsState& state);
+    void SetComputeState(const ComputeState& state);
     void SetResourceState(Texture& texture, ResourceStateBits dstResourceMask);
 
     operator VkCommandBuffer() const { return mCmdBuf; }

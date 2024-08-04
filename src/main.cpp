@@ -10,6 +10,7 @@
 #include "vk/swapchain.h"
 #include "vk/shader.h"
 #include "vk/pipeline.h"
+#include "vk/buffer.h"
 
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 720;
@@ -30,6 +31,20 @@ int main()
 
     Shader triangleVS = Shader(device, "triangle.vs.spv");
     Shader trianglePS = Shader(device, "triangle.ps.spv");
+    Shader testCS = Shader(device, "test.cs.spv");
+
+    std::vector<int> data = std::vector<int>(1024, 1337);
+    auto inputBuffer = CreateHandle<Buffer>(device, BufferDesc{
+        .byteSize = 1024,
+        .access = MemoryAccess::HOST,
+        .usage = BufferUsageBits::STORAGE,
+        .data = data.data(),
+    });
+    auto outputBuffer = CreateHandle<Buffer>(device, BufferDesc{
+        .byteSize = 1024,
+        .access = MemoryAccess::HOST,
+        .usage = BufferUsageBits::STORAGE,
+    });
 
     auto trianglePipeline = CreateHandle<Pipeline>(
         device, PipelineDesc{
@@ -44,10 +59,28 @@ int main()
         .depthStencil = { .shouldEnableDepthTesting = true }
     });
 
+    auto computePipeline = CreateHandle<Pipeline>(
+        device, PipelineDesc{
+        .type = PipelineType::COMPUTE,
+        .shaders = { &testCS }
+    });
+
     uint32_t frameIndex = 0;
     while (!window.ShouldClose()) {
         window.PollEvents();
         gui.NewFrame();
+
+        auto computeCmdList = device.CreateCommandList();
+        computeCmdList->Open();
+        computeCmdList->SetComputeState({ 
+            .pipeline = computePipeline,
+            .bindings = { Binding(*inputBuffer), Binding(*outputBuffer) }
+        });
+        computeCmdList->Dispatch(1024);
+        computeCmdList->Close();
+        device.ExecuteCommandList(computeCmdList);
+        LOG_INFO("HMM: {0}", ((int*)outputBuffer->GetMappedData())[1]);
+
 
         framePacingState.WaitForFrameInFlight(frameIndex);
         auto frameState = framePacingState.GetFrameState(frameIndex);

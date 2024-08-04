@@ -236,3 +236,25 @@ void CommandList::SetGraphicsState(const GraphicsState& state)
     }
     state.pipeline->Bind(this);
 }
+
+
+void CommandList::SetComputeState(const ComputeState& state)
+{
+    assert(state.pipeline != nullptr);
+    assert(state.pipeline->GetPipelineType() == PipelineType::COMPUTE);
+
+    const auto& pushConstants = state.pushConstants;
+    if (pushConstants.byteSize != 0u && pushConstants.data != nullptr) {
+        state.pipeline->PushConstants(this, pushConstants.byteSize, pushConstants.data);
+    }
+    if(state.bindings.size() > 0) {
+        state.pipeline->PushDescriptorSet(this, 0, (void*)state.bindings.begin());
+    }
+    state.pipeline->Bind(this);
+}
+
+void CommandList::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+    vkCmdDispatch(mCmdBuf, groupCountX, groupCountY, groupCountZ);
+    vkCmdPipelineBarrier(mCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+}
