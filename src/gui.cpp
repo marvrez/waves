@@ -195,6 +195,7 @@ void GUI::DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, ui
         .indexBuffer = indexBuffer,
         .pushConstants = { .byteSize = sizeof(PushConstantData), .data = (void*)&pushConstantData },
     };
+    cmdList->SetGraphicsState(state);
 
     int globalIndexOffset = 0, globalVertexOffset = 0;
     for (int listIdx = 0; listIdx < drawData->CmdListsCount; ++listIdx) {
@@ -213,7 +214,6 @@ void GUI::DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, ui
             if (scissorRect.maxX <= scissorRect.minX || scissorRect.maxY <= scissorRect.minY) continue;
             state.viewport.scissorRect = scissorRect;
 
-            cmdList->SetGraphicsState(state);
             cmdList->DrawIndexed({
                 .vertexCount = drawCmd->ElemCount,
                 .startVertexLocation = drawCmd->VtxOffset + globalVertexOffset,

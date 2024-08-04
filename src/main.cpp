@@ -72,8 +72,8 @@ int main()
         });
         cmdList->Draw({ .vertexCount = 3 });
 
-        gui.DrawFrame(cmdList, swapchainTexture, frameIndex);
         cmdList->SetResourceState(swapchainTexture, ResourceStateBits::PRESENT);
+        gui.DrawFrame(cmdList, swapchainTexture, frameIndex);
 
         cmdList->Close();
         swapchain.SubmitAndPresent(cmdList, swapchainImageIndex, frameState);
