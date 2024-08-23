@@ -7,7 +7,7 @@ struct BufferDesc {
 	uint64_t byteSize = 0ull;                       // Buffer size in bytes.
 	MemoryAccess access = MemoryAccess::DEVICE;     // Buffer memory access.
 	BufferUsageBits usage = BufferUsageBits::NONE;  // Buffer usage flags.
-	void* data = nullptr;                           // [Optional] Initial buffer contents.
+	const void* data = nullptr;                           // [Optional] Initial buffer contents.
 };
 
 class Device;

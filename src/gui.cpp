@@ -121,8 +121,12 @@ void GUI::NewFrame()
 
     // Now, render the actual GUI
     ImGui::NewFrame();
-    // TODO: REPLACE WITH ACTUAL GUI STUFF
-    ImGui::ShowDemoWindow();
+
+    ImGui::SliderFloat("Choppiness", &mGuiParams.choppiness, 0.f, 2.5f);
+    ImGui::SliderInt("Sun Elevation", &mGuiParams.sunElevation, 0, 89);
+    ImGui::SliderInt("Sun Azimuth", &mGuiParams.sunAzimuth, 0, 359);
+    ImGui::SliderFloat("Displacement Scale Factor", &mGuiParams.displacementScaleFactor, 0, 100);
+
     ImGui::Render();
 }
 

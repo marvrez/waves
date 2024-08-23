@@ -56,6 +56,8 @@ enum class PipelineType : uint8_t { COMPUTE, GRAPHICS };
 enum class Filter : uint8_t { POINT, BILINEAR, TRILINEAR, COUNT};
 enum class WrapMode : uint16_t { WRAP, CLAMP_TO_EDGE, CLAMP_TO_BORDER, COUNT };
 enum class CullMode : uint16_t { NONE, CCW, CW, COUNT };
+enum class PrimitiveType : uint16_t { POINT_LIST, LINE_LIST, TRIANGLE_LIST, TRIANGLE_LIST_WITH_ADJACENCY, TRIANGLE_STRIP, TRIANGLE_STRIP_WITH_ADJACENCY, TRIANGLE_FAN, PATCH_LIST, COUNT };
+enum class RasterFillMode : uint16_t { SOLID, WIREFRAME, POINT, COUNT };
 enum class LoadOp : uint16_t { LOAD, CLEAR, DONT_CARE, COUNT };
 enum class CompareOp : uint16_t {
     NEVER,

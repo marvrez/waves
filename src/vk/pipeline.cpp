@@ -203,7 +203,7 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .topology = GetVkPrimitiveTopology(desc.rasterization.primitiveType),
         .primitiveRestartEnable = VK_FALSE,
     };
 
@@ -217,7 +217,7 @@ static VkPipeline CreateGraphicsPipeline(VkDevice device, VkPipelineLayout pipel
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
-        .polygonMode = VK_POLYGON_MODE_FILL,
+        .polygonMode = GetVkPolygonMode(desc.rasterization.fillMode),
         .lineWidth = 1.0f,
         .cullMode = GetVkCullModeFlags(desc.rasterization.cullMode),
         .frontFace = GetVkFrontFace(desc.rasterization.cullMode),

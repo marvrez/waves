@@ -4,6 +4,8 @@
 
 struct RasterizationDesc {
     CullMode cullMode = CullMode::CCW;
+    PrimitiveType primitiveType = PrimitiveType::TRIANGLE_LIST;
+    RasterFillMode fillMode = RasterFillMode::SOLID;
 };
 
 struct DepthStencilDesc {

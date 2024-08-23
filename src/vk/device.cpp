@@ -10,6 +10,7 @@ const std::vector<const char*> kRequiredExtensions = {
     VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
     VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+    VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
 #ifdef __APPLE__
     "VK_KHR_portability_subset",
 #endif // __APPLE__
@@ -63,8 +64,7 @@ static VkInstance CreateInstance(bool enableValidationLayers)
         LOG_INFO("Enabled validation layers: {}", fmt::join(kValidationLayers, ", "));
     }
 
-#ifdef _DEBUG
-    std::vector<VkValidationFeatureEnableEXT> enabledValidationFeatures = { VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT };
+    std::vector<VkValidationFeatureEnableEXT> enabledValidationFeatures = { VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT, VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT };
     const VkValidationFeaturesEXT validationFeatures = {
         .sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
         .enabledValidationFeatureCount = (uint32_t)enabledValidationFeatures.size(),
@@ -86,6 +86,7 @@ static VkDebugUtilsMessengerEXT CreateDebugMessenger(VkInstance instance, bool e
     const VkDebugUtilsMessengerCreateInfoEXT createInfo = {
         .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
         .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
         .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |

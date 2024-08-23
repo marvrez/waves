@@ -31,9 +31,10 @@ static VkShaderStageFlags GetShaderStage(SpvReflectShaderStageFlagBits reflectSh
 static VkDescriptorType GetDescriptorType(SpvReflectDescriptorType reflectDescriptorType)
 {
     switch (reflectDescriptorType) {
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:             return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:             return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         default:
             assert(!"Unsupported SpvReflectDescriptorType!");
             return {};

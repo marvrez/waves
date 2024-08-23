@@ -265,3 +265,30 @@ constexpr VkAttachmentLoadOp GetVkAttachmentLoadOp(LoadOp op)
     }
     return VK_ATTACHMENT_LOAD_OP_MAX_ENUM; // Shouldn't get here
 }
+
+constexpr VkPrimitiveTopology GetVkPrimitiveTopology(PrimitiveType type)
+{
+    switch (type) {
+        case PrimitiveType::POINT_LIST:                     return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case PrimitiveType::LINE_LIST:                      return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case PrimitiveType::TRIANGLE_LIST:                  return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case PrimitiveType::TRIANGLE_STRIP:                 return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        case PrimitiveType::TRIANGLE_FAN:                   return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+        case PrimitiveType::TRIANGLE_LIST_WITH_ADJACENCY:   return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
+        case PrimitiveType::TRIANGLE_STRIP_WITH_ADJACENCY:  return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
+        case PrimitiveType::PATCH_LIST:                     return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+        case PrimitiveType::COUNT:                          return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+    }
+    return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM; // Shouldn't get here
+}
+
+constexpr VkPolygonMode GetVkPolygonMode(RasterFillMode mode)
+{
+    switch (mode) {
+        case RasterFillMode::SOLID:         return VK_POLYGON_MODE_FILL;
+        case RasterFillMode::WIREFRAME:     return VK_POLYGON_MODE_LINE;
+        case RasterFillMode::POINT:         return VK_POLYGON_MODE_POINT;
+        case RasterFillMode::COUNT:         return VK_POLYGON_MODE_MAX_ENUM;
+    }
+    return VK_POLYGON_MODE_MAX_ENUM; // Shouldn't get here
+}
