@@ -31,9 +31,7 @@ static inline float omega(float k)
 [numthreads(32, 32, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
-    float n = (id.x < 0.5f * gParams.texSize) ? id.x : id.x - gParams.texSize;
-    float m = (id.y < 0.5f * gParams.texSize) ? id.y : id.y - gParams.texSize;
-    float2 waveVector = (2.0f * PI * float2(n, m)) / gParams.oceanSize;
+    float2 waveVector = (2.0f * PI * float2(id.xy)) / gParams.oceanSize;
 
     float phase = gPhase.Load(int3(id.xy, 0));
     float2 phaseVector = float2(cos(phase), sin(phase));

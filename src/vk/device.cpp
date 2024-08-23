@@ -190,7 +190,7 @@ static VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t queueInde
 
     const VkPhysicalDeviceFeatures2 deviceFeatures2 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-        .features = { .shaderInt16 = VK_TRUE }
+        .features = { .shaderInt16 = VK_TRUE, .fillModeNonSolid = VK_TRUE }
     };
 
     const VkPhysicalDeviceVulkan11Features deviceFeatures11 = {

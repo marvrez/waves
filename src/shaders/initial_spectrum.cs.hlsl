@@ -25,10 +25,7 @@ static inline float square(float x)
 [numthreads(32, 32, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
-    const float n = (id.x < 0.5f * gParams.texSize) ? id.x : id.x - gParams.texSize;
-    const float m = (id.y < 0.5f * gParams.texSize) ? id.y : id.y - gParams.texSize;
-
-    float2 waveVector = (2.0 * PI * float2(n, m)) / gParams.oceanSize;
+    float2 waveVector = (2.0 * PI * float2(id.xy)) / gParams.oceanSize;
     float k = length(waveVector);
 
     float U10 = length(gParams.windDirection);

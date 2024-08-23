@@ -11,7 +11,7 @@ class CommandList;
 
 struct GUIParams {
     float choppiness;
-    float displacementScaleFactor = 1.0f;
+    float displacementScaleFactor = 8.0f;
 
     float windMagnitude = 14.142135f;
     float windAngle = 45.f;
@@ -19,6 +19,8 @@ struct GUIParams {
     // In degrees
     int sunElevation;
     int sunAzimuth;
+
+    bool isInWireframeMode = false;
 };
 
 class GUI {
@@ -28,6 +30,7 @@ public:
 
     void NewFrame();
     GUIParams GetParams() const { return mGuiParams; }
+    bool hasWindParamsChanged() const { return mHasWindParamsChanged; }
     void DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, uint32_t frameIndex);
 
 private:
@@ -38,7 +41,8 @@ private:
     Handle<Texture> mFontTexture;
     std::array<Handle<Buffer>, 2> mVertexBuffers;
     std::array<Handle<Buffer>, 2> mIndexBuffers;
-    GUIParams mGuiParams = { .choppiness = 1.5f, .sunElevation = 0, .sunAzimuth = 90 };
+    GUIParams mGuiParams = { .choppiness = 1.5f, .sunElevation = 0, .sunAzimuth = 90, .windMagnitude = 14.142135f, .windAngle = 45.f };
+    bool mHasWindParamsChanged = false;
 
     const Device& mDevice;
     const Window& mWindow;

@@ -43,6 +43,29 @@ static glm::vec2 GetWindDirection(const GUIParams& params)
     return params.windMagnitude * glm::vec2(glm::cos(windAngleRad), glm::sin(windAngleRad));
 }
 
+static Handle<Pipeline> CreateOceanPipeline(const Device& device, const Swapchain& swapchain, bool isInWireframeMode = false)
+{
+    Shader oceanVS = Shader(device, "ocean.vs.spv");
+    Shader oceanPS = Shader(device, "ocean.ps.spv");
+    return CreateHandle<Pipeline>(
+        device , PipelineDesc{
+        .type = PipelineType::GRAPHICS,
+        .shaders = { &oceanVS, &oceanPS },
+        .attachmentLayout = {
+            .colorAttachments = {{
+                .format = swapchain.GetFormat(),
+                .shouldEnableBlend = true
+            }},
+        },
+        .rasterization = { .cullMode = CullMode::NONE, .fillMode = isInWireframeMode ? RasterFillMode::WIREFRAME : RasterFillMode::SOLID},
+        .attributeDescs = {
+            { .name = "POSITION0", .format = Format::RGB32_FLOAT, .offset = offsetof(GridVertex, pos), .stride = sizeof(GridVertex) },
+            { .name = "TEXCOORD0", .format = Format::RG32_FLOAT, .offset = offsetof(GridVertex, uv), .stride = sizeof(GridVertex) },
+        },
+        .depthStencil = { .shouldEnableDepthTesting = true, .depthCompareOp = CompareOp::LESS_OR_EQUAL  },
+    });
+}
+
 int main()
 {
     Window window = Window(kWindowWidth, kWindowHeight, "sdf-edit", false);
@@ -74,25 +97,7 @@ int main()
     const Grid& grid = MakeGrid(kGridSize);
     const GridMesh& gridMesh = MakeGridMesh(device, grid);
 
-    Shader oceanVS = Shader(device, "ocean.vs.spv");
-    Shader oceanPS = Shader(device, "ocean.ps.spv");
-    auto oceanPipeline = CreateHandle<Pipeline>(
-        device , PipelineDesc{
-        .type = PipelineType::GRAPHICS,
-        .shaders = { &oceanVS, &oceanPS },
-        .attachmentLayout = {
-            .colorAttachments = {{
-                .format = swapchain.GetFormat(),
-                .shouldEnableBlend = true
-            }},
-        },
-        .rasterization = { .cullMode = CullMode::NONE, .fillMode = RasterFillMode::SOLID},
-        .attributeDescs = {
-            { .name = "POSITION0", .format = Format::RGB32_FLOAT, .offset = offsetof(GridVertex, pos), .stride = sizeof(GridVertex) },
-            { .name = "TEXCOORD0", .format = Format::RG32_FLOAT, .offset = offsetof(GridVertex, uv), .stride = sizeof(GridVertex) },
-        },
-        .depthStencil = { .shouldEnableDepthTesting = true, .depthCompareOp = CompareOp::LESS_OR_EQUAL  },
-    });
+    auto oceanPipeline = CreateOceanPipeline(device, swapchain, false);
     auto [width, height] = window.GetWindowSize();
     const float aspectRatio = float(width) / float(height);
     const glm::mat4 worldToClip = camera.GetViewProjectionMatrix(aspectRatio);
@@ -108,7 +113,7 @@ int main()
     auto normalMapPipeline = CreateHandle<Pipeline>( device, PipelineDesc{ .type = PipelineType::COMPUTE, .shaders = { &normalMapCS } });
     auto normalMapTexture = CreateHandle<Texture>(device, TextureDesc{
         .dimensions = { kTextureSize, kTextureSize, 1u },
-        .sampler = { .filter = Filter::BILINEAR, .wrapMode = WrapMode::WRAP },
+        .sampler = { .filter = Filter::TRILINEAR, .wrapMode = WrapMode::WRAP },
         .format = Format::RGBA32_FLOAT,
         .usage = TextureUsageBits::SAMPLED | TextureUsageBits::STORAGE,
     });
@@ -129,7 +134,6 @@ int main()
     InitialSpectrumPushConstantData initialSpectrumPushConstantData = {
         .texSize = kTextureSize,
         .oceanSize = kGridSize,
-        .windDirection = GetWindDirection(gui.GetParams())
     };
 
     // Set up phase pipeline
@@ -191,6 +195,7 @@ int main()
     auto spectrumTexture = CreateHandle<Texture>(device, TextureDesc{
         .dimensions = { kTextureSize, kTextureSize, 1u },
         .format = Format::RGBA32_FLOAT,
+        .sampler = { .wrapMode = WrapMode::WRAP, .filter = Filter::TRILINEAR },
         .usage = TextureUsageBits::STORAGE | TextureUsageBits::SAMPLED,
     });
 
@@ -213,6 +218,7 @@ int main()
     // Flags
     bool shouldUpdateInitialSpectrum = true;
     bool isPingPhase = true;
+    bool prevWireframeMode = false;
 
     Timer timer;
     float dt = 0.0f;;
@@ -222,8 +228,13 @@ int main()
         camera.ProcessKeyboard(window, dt);
         gui.NewFrame();
 
+        const auto params = gui.GetParams();
+        shouldUpdateInitialSpectrum = shouldUpdateInitialSpectrum || gui.hasWindParamsChanged();
+
         // Generate initial spectrum
         if (shouldUpdateInitialSpectrum) {
+            initialSpectrumPushConstantData.windDirection = GetWindDirection(params);
+
             auto cmdList = device.CreateCommandList();
             cmdList->Open();
             cmdList->SetResourceState(*initialSpectrumTexture, ResourceStateBits::UNORDERED_ACCESS);
@@ -263,7 +274,7 @@ int main()
 
         // Generate spectrum
         {
-            spectrumPushConstantData.choppiness = gui.GetParams().choppiness;
+            spectrumPushConstantData.choppiness = params.choppiness;
 
             auto cmdList = device.CreateCommandList();
             cmdList->Open();
@@ -371,8 +382,8 @@ int main()
         // Ocean shading
         oceanPushConstantData.cameraPosition = camera.GetPosition();
         oceanPushConstantData.worldToClip = camera.GetViewProjectionMatrix(aspectRatio);
-        oceanPushConstantData.sunDirection = GetSunDirection(gui.GetParams());
-        //oceanPushConstantData.displacementScaleFactor = gui.GetParams().displacementScaleFactor;
+        oceanPushConstantData.sunDirection = GetSunDirection(params);
+        oceanPushConstantData.displacementScaleFactor = params.displacementScaleFactor;
         auto& displacementMap = shouldUseTempTextureAsInput ? tempTexture : spectrumTexture;
         cmdList->SetResourceState(*displacementMap, ResourceStateBits::SHADER_RESOURCE);
         cmdList->SetResourceState(*normalMapTexture, ResourceStateBits::SHADER_RESOURCE);
@@ -403,6 +414,12 @@ int main()
         timer.Reset();
 
         isPingPhase = !isPingPhase;
+        if (prevWireframeMode != params.isInWireframeMode) {
+            prevWireframeMode = params.isInWireframeMode;
+            device.WaitIdle();
+            oceanPipeline = CreateOceanPipeline(device, swapchain, params.isInWireframeMode);
+            prevWireframeMode = params.isInWireframeMode;
+        }
     }
     device.WaitIdle();
 
