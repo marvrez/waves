@@ -40,9 +40,9 @@ static VkInstance CreateInstance(bool enableValidationLayers)
 
     const VkApplicationInfo appInfo = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "sdf-edit",
+        .pApplicationName = "waves",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-        .pEngineName = "sdf-edit",
+        .pEngineName = "waves",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion = VK_API_VERSION_1_3,
     };

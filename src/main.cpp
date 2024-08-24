@@ -68,7 +68,7 @@ static Handle<Pipeline> CreateOceanPipeline(const Device& device, const Swapchai
 
 int main()
 {
-    Window window = Window(kWindowWidth, kWindowHeight, "sdf-edit", false);
+    Window window = Window(kWindowWidth, kWindowHeight, "waves", false);
     Device device = Device(window, true);
     FramePacingState framePacingState = FramePacingState(device);
 

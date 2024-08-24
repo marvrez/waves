@@ -1,2 +1,2 @@
-# sdf-edit
-SDF editor created with Vulkan 1.3
+# waves
+Ocean wave simulation using FFT and running on the GPU. Created with Vulkan 1.3
