@@ -5,6 +5,9 @@ struct Constants {
     float displacementScaleFactor;
 
     float3 sunDirection;
+    float tipScaleFactor;
+
+    float exposure;
 };
 
 [[vk::push_constant]] Constants gConsts;
@@ -23,25 +26,33 @@ float3 HDR(float3 color, float exposure)
 // Sky and ocean color constants
 static const float3 kSkyColor = float3(3.2f, 9.6f, 12.8f);
 static const float3 kOceanColor = float3(0.004f, 0.016f, 0.047f);
-static const float  kExposure = 0.35f;
 
 float4 main(float3 worldPos : TEXCOORD0, float2 uv : TEXCOORD1) : SV_TARGET
 {
     // Sample the normal from the normal map
-    float3 normal = gNormalMapTexture.Sample(gNormalMapSampler, uv).xyz;
+    const float3 normal = gNormalMapTexture.Sample(gNormalMapSampler, uv).xyz;
+
+    const float3 lightDir = -normalize(gConsts.sunDirection);
+    const float3 viewDir = normalize(worldPos - gConsts.cameraPosition);
+    const float3 halfwayDir = normalize(lightDir + viewDir);
+
+    const float NdotL = saturate(dot(normal, lightDir)); // Lambertian/diffuse factor
+    const float NdotV = saturate(dot(normal, viewDir)); // View factor
+    const float NdotH = saturate(dot(normal, halfwayDir)); // Specular factor
 
     // Compute view direction
-    float3 viewDir = normalize(worldPos - gConsts.cameraPosition);
-    float fresnel = 0.02f + 0.98f * pow(1.0f - dot(normal, viewDir), 5.0f);
+    float fresnel = 0.02f + 0.98f * pow(1.0f - NdotV, 5.0f);
 
     // Calculate sky and water color contributions
     float3 sky = fresnel * kSkyColor;
-    float diffuseFactor = saturate(dot(normal, normalize(-gConsts.sunDirection)));
-    float3 water = (1.0f - fresnel) * kOceanColor * kSkyColor * diffuseFactor;
+    float3 water = (1.0f - fresnel) * kOceanColor * kSkyColor * NdotL;
+
+    // Ghetto foam approximation based on wave height
+    const float3 tipColor = (1.0f - fresnel) * max(0.003 * kSkyColor * pow(-worldPos.y, gConsts.tipScaleFactor), float3(0, 0, 0));
 
     // Final color computation
-    const float3 color = sky + water;
+    const float3 color = sky + water + tipColor;
 
     // Apply HDR and set the output color
-    return float4(HDR(color, kExposure), 1.0f);
+    return float4(HDR(color, gConsts.exposure), 1.0f);
 }

@@ -16,6 +16,9 @@ struct Constants {
     float displacementScaleFactor;
 
     float3 sunDirection;
+    float tipScaleFactor;
+
+    float exposure;
 };
 
 [[vk::push_constant]] Constants gConsts;

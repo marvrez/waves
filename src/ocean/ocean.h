@@ -7,6 +7,9 @@ struct OceanPushConstantData {
     float displacementScaleFactor;
 
     glm::vec3 sunDirection;
+    float tipScaleFactor;
+
+    float exposure;
 };
 
 struct InitialSpectrumPushConstantData {

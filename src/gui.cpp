@@ -128,7 +128,9 @@ void GUI::NewFrame()
     ImGui::SliderFloat("Choppiness", &mGuiParams.choppiness, 0.f, 2.5f);
     ImGui::SliderInt("Sun Elevation", &mGuiParams.sunElevation, 0, 89);
     ImGui::SliderInt("Sun Azimuth", &mGuiParams.sunAzimuth, 0, 359);
-    ImGui::SliderFloat("Displacement Scale Factor", &mGuiParams.displacementScaleFactor, 0, 100);
+    ImGui::SliderFloat("Displacement Factor", &mGuiParams.displacementScaleFactor, -100, 100);
+    ImGui::SliderFloat("Tip Factor", &mGuiParams.tipScaleFactor, -5, 5);
+    ImGui::SliderFloat("Exposure", &mGuiParams.exposure, 0.0f, 1.0f);
 
     mHasWindParamsChanged |= ImGui::SliderFloat("Wind Magnitude", &mGuiParams.windMagnitude, 10.0f, 50.0f);
     mHasWindParamsChanged |= ImGui::SliderFloat("Wind Angle", &mGuiParams.windAngle, 0, 359);

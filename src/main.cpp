@@ -384,6 +384,8 @@ int main()
         oceanPushConstantData.worldToClip = camera.GetViewProjectionMatrix(aspectRatio);
         oceanPushConstantData.sunDirection = GetSunDirection(params);
         oceanPushConstantData.displacementScaleFactor = params.displacementScaleFactor;
+        oceanPushConstantData.tipScaleFactor = params.tipScaleFactor;
+        oceanPushConstantData.exposure = params.exposure;
         auto& displacementMap = shouldUseTempTextureAsInput ? tempTexture : spectrumTexture;
         cmdList->SetResourceState(*displacementMap, ResourceStateBits::SHADER_RESOURCE);
         cmdList->SetResourceState(*normalMapTexture, ResourceStateBits::SHADER_RESOURCE);
