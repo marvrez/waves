@@ -12,7 +12,7 @@ class CommandList;
 struct GUIParams {
     float choppiness;
     float displacementScaleFactor = 8.0f;
-    float tipScaleFactor = 5.0f;
+    float tipScaleFactor = 2.5f;
     float exposure = 0.35f;
 
     float windMagnitude = 14.142135f;
