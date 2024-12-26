@@ -8,10 +8,10 @@ set(VK_VERSION "vulkan1.2")
 # Change this variable if you want to use a local dxc executable.
 set(DXC_COMPILER "dxc")
 
-set(SHADERS_CS "initial_spectrum.cs.hlsl" "phase.cs.hlsl" "spectrum.cs.hlsl" "normal_map.cs.hlsl" "fft_horizontal.cs.hlsl" "fft_vertical.cs.hlsl")
+set(SHADERS_CS "advect.cs.hlsl" "divergence.cs.hlsl" "externalForce.cs.hlsl" "pressure.cs.hlsl" "render.cs.hlsl")
 set(SHADERS_DS)
-set(SHADERS_PS "imgui.ps.hlsl" "ocean.ps.hlsl" "blit.ps.hlsl")
-set(SHADERS_VS "imgui.vs.hlsl" "ocean.vs.hlsl" "blit.vs.hlsl")
+set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl")
+set(SHADERS_VS "imgui.vs.hlsl" "blit.vs.hlsl")
 set(SHADERS_GS)
 set(SHADERS_HS)
 set(SHADERS_LIB)
