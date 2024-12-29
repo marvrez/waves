@@ -72,6 +72,17 @@ static VkImageAspectFlags GetAspectMask(Format format)
     return format == Format::D32_FLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
+constexpr VkImageViewType GetImageViewType(TextureType type)
+{
+    switch (type) {
+        case TextureType::TEXTURE_1D: return VK_IMAGE_VIEW_TYPE_1D;
+        case TextureType::TEXTURE_2D: return VK_IMAGE_VIEW_TYPE_2D;
+        case TextureType::TEXTURE_3D: return VK_IMAGE_VIEW_TYPE_3D;
+        case TextureType::COUNT:      return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+    }
+    return VK_IMAGE_VIEW_TYPE_MAX_ENUM; // Shouldn't get here
+}
+
 constexpr VkFilter GetVkFilter(Filter filter)
 {
     switch (filter) {

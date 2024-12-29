@@ -258,3 +258,9 @@ void CommandList::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t 
     vkCmdDispatch(mCmdBuf, groupCountX, groupCountY, groupCountZ);
     vkCmdPipelineBarrier(mCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
 }
+
+void CommandList::DispatchIndirect(const Buffer& buffer, uint32_t offset)
+{
+    vkCmdDispatchIndirect(mCmdBuf, buffer.GetVkBuffer(), offset);
+    vkCmdPipelineBarrier(mCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+}

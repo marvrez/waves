@@ -9,6 +9,7 @@ struct SamplerDesc {
 
 struct TextureDesc {
     glm::uvec3 dimensions = glm::uvec3(0u);            // Texture dimensions
+    TextureType type = TextureType::TEXTURE_2D;        // Texture dimension type.
     uint32_t mipCount = 1u;                            // Number of mipmaps.
     Format format = Format::NONE;                      // Texture pixel format.
     TextureUsageBits usage = TextureUsageBits::NONE;   // Texture usage flags.

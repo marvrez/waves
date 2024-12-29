@@ -59,6 +59,7 @@ enum class CullMode : uint16_t { NONE, CCW, CW, COUNT };
 enum class PrimitiveType : uint16_t { POINT_LIST, LINE_LIST, TRIANGLE_LIST, TRIANGLE_LIST_WITH_ADJACENCY, TRIANGLE_STRIP, TRIANGLE_STRIP_WITH_ADJACENCY, TRIANGLE_FAN, PATCH_LIST, COUNT };
 enum class RasterFillMode : uint16_t { SOLID, WIREFRAME, POINT, COUNT };
 enum class LoadOp : uint16_t { LOAD, CLEAR, DONT_CARE, COUNT };
+enum class TextureType : uint8_t { TEXTURE_1D, TEXTURE_2D, TEXTURE_3D, COUNT };
 enum class CompareOp : uint16_t {
     NEVER,
     LESS,

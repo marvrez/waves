@@ -64,6 +64,7 @@ static VkImageView CreateImageView(
     VkDevice device,
     VkImage image,
     Format format,
+    TextureType type,
     uint32_t baseMipLevel,
     uint32_t levelCount
 )
@@ -71,7 +72,7 @@ static VkImageView CreateImageView(
     const VkImageViewCreateInfo imageViewCreateInfo = { 
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .viewType = GetImageViewType(type),
         .format = GetVkFormat(format),
         .subresourceRange = {
             .aspectMask = GetAspectMask(format),
@@ -126,7 +127,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
         );
     }
     mSamplerState = CreateOrGetSamplerState(device, desc.sampler);
-    mImageView = CreateImageView(device, mImage, desc.format, 0u, desc.mipCount);
+    mImageView = CreateImageView(device, mImage, desc.format, desc.type, 0u, desc.mipCount);
 }
 
 Texture::~Texture()
