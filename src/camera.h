@@ -12,7 +12,7 @@ struct Camera
         glm::vec3 position,
         float near = 0.1f,
         float far = 1000.f,
-        float movementSpeed = 10000.f,
+        float movementSpeed = 1.f,
         float mouseSensitivity = 0.1f
     );
 
@@ -40,7 +40,7 @@ private:
     float mMouseSensitivity;
 
     float mPitch = 0.f; // X
-    float mYaw = -90.f; // Y
+    float mYaw = 85.f; // Y
     float mFovY = 60.f;
 
     float mNear, mFar;

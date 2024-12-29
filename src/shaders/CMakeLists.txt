@@ -10,8 +10,8 @@ set(DXC_COMPILER "dxc")
 
 set(SHADERS_CS "advect.cs.hlsl" "divergence.cs.hlsl" "externalForce.cs.hlsl" "pressure.cs.hlsl" "render.cs.hlsl")
 set(SHADERS_DS)
-set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl")
-set(SHADERS_VS "imgui.vs.hlsl" "blit.vs.hlsl")
+set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl")
+set(SHADERS_VS "imgui.vs.hlsl" "blit.vs.hlsl" "grid.vs.hlsl")
 set(SHADERS_GS)
 set(SHADERS_HS)
 set(SHADERS_LIB)
@@ -23,6 +23,8 @@ function(Generate_Shaders SHADERS_SRC_LIST SHADER_TYPE)
         message(STATUS "Calculating dependencies for shader ${SHADER_TYPE} ${FILE_NAME}")
         if (${SHADER_TYPE} STREQUAL vs OR ${SHADER_TYPE} STREQUAL ds OR ${SHADER_TYPE} STREQUAL gs)
             set(INVERT_Y TRUE)
+        else()
+            set(INVERT_Y FALSE)
         endif()
 
         set(SPIRV_OUTPUT "./${OUTPUT_DIR}/${FILE_NAME}.spv")
@@ -33,11 +35,14 @@ function(Generate_Shaders SHADERS_SRC_LIST SHADER_TYPE)
            -I "${CMAKE_CURRENT_SOURCE_DIR}/../"   # Include directory
            -spirv                                 # Generate SPIR-V for Vulkan
            -Fo ${SPIRV_OUTPUT}                    # Output file
-           #$<$<BOOL:${INVERT_Y}>:-fvk-invert-y>
            -fvk-use-gl-layout                     # Memory layout
            -fspv-target-env=${VK_VERSION}         # Target environment
            -enable-16bit-types                    # Enable fp16
         )
+
+        if (INVERT_Y)
+            list(APPEND COMMAND_PARAMS -fvk-invert-y)
+        endif()
 
         # Determine include dependencies (recursively) This works by compiling
         # the shader with the option -Vi, which seems to print all inclusion

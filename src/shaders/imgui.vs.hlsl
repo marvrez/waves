@@ -21,6 +21,7 @@ VSOutput main(VSInput input)
 {
     VSOutput output = (VSOutput)0;
     output.position = float4(input.position * gConsts.scale + gConsts.translate, 0.0, 1.0);
+    output.position.y *= -1.0; // Flip Y so that (0, 0) is top-left
     output.uv = input.uv;
     output.color = input.color;
     return output;

@@ -17,12 +17,12 @@ void Camera::ProcessKeyboard(const Window& window, float dt)
     if (window.Pressed(Keycode::KEY_S)) mPosition -= mFront * movedDistance;
     if (window.Pressed(Keycode::KEY_A)) mPosition -= mRight * movedDistance;
     if (window.Pressed(Keycode::KEY_D)) mPosition += mRight * movedDistance;
-    if (window.Pressed(Keycode::KEY_E)) mPosition -= mUp * movedDistance;
-    if (window.Pressed(Keycode::KEY_Q)) mPosition += mUp * movedDistance;
-    if (window.Pressed(Keycode::KEY_LEFT)) mYaw -= 0.1f * movedDistance;
-    if (window.Pressed(Keycode::KEY_RIGHT)) mYaw += 0.1f * movedDistance;
-    if (window.Pressed(Keycode::KEY_UP)) mPitch -= 0.1f * movedDistance;
-    if (window.Pressed(Keycode::KEY_DOWN)) mPitch += 0.1f * movedDistance;
+    if (window.Pressed(Keycode::KEY_E)) mPosition += mUp * movedDistance;
+    if (window.Pressed(Keycode::KEY_Q)) mPosition -= mUp * movedDistance;
+    if (window.Pressed(Keycode::KEY_LEFT)) mYaw -= movedDistance;
+    if (window.Pressed(Keycode::KEY_RIGHT)) mYaw += movedDistance;
+    if (window.Pressed(Keycode::KEY_UP)) mPitch += movedDistance;
+    if (window.Pressed(Keycode::KEY_DOWN)) mPitch -= movedDistance;
     UpdateCameraVectors();
 }
 
