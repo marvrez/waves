@@ -15,6 +15,8 @@
 
 #include <imgui.h>
 
+constexpr int kPlayIncrement = 1e6;
+
 struct PushConstantData {
     glm::vec2 scale;
     glm::vec2 translate;
@@ -98,7 +100,7 @@ void GUI::NewFrame()
 {
     // Setup IO
     ImGuiIO& io = ImGui::GetIO();
-    mHasWindParamsChanged = false;
+    mHasParamsChanged = false;
 
     const auto [windowWidth, windowHeight] = mWindow.GetWindowSize();
     const auto [framebufferWidth, framebufferHeight] = mWindow.GetFramebufferSize();
@@ -123,17 +125,19 @@ void GUI::NewFrame()
     // Now, render the actual GUI
     ImGui::NewFrame();
 
-    ImGui::Checkbox("Wireframe Mode", &mGuiParams.isInWireframeMode);
-
-    ImGui::SliderFloat("Choppiness", &mGuiParams.choppiness, 0.f, 2.5f);
-    ImGui::SliderInt("Sun Elevation", &mGuiParams.sunElevation, 0, 89);
-    ImGui::SliderInt("Sun Azimuth", &mGuiParams.sunAzimuth, 0, 359);
-    ImGui::SliderFloat("Displacement Factor", &mGuiParams.displacementScaleFactor, -100, 100);
-    ImGui::SliderFloat("Tip Factor", &mGuiParams.tipScaleFactor, -5, 5);
-    ImGui::SliderFloat("Exposure", &mGuiParams.exposure, 0.0f, 1.0f);
-
-    mHasWindParamsChanged |= ImGui::SliderFloat("Wind Magnitude", &mGuiParams.windMagnitude, 10.0f, 50.0f);
-    mHasWindParamsChanged |= ImGui::SliderFloat("Wind Angle", &mGuiParams.windAngle, 0, 359);
+    if (ImGui::Button("Next")) mGuiParams.targetFrame++;
+    ImGui::SameLine();
+    if (ImGui::Button("Play")) mGuiParams.targetFrame += kPlayIncrement;
+    ImGui::SameLine();
+    if (ImGui::Button("Pause")) mGuiParams.currentFrame = mGuiParams.targetFrame;
+    if (ImGui::SliderFloat("Slice", &mGuiParams.slice, 0.0f, 1.0f)) mHasParamsChanged = true;
+    // Display mode
+    constexpr const char* kDisplayModes[] = { "Density", "Velocity", "Tile Tag", "Divergence", "Jacobi", "Residual", "Gradient" };
+    if (ImGui::Combo("Display Mode", (int*)&mGuiParams.displayMode, kDisplayModes, IM_ARRAYSIZE(kDisplayModes))) {
+        mHasParamsChanged = true;
+    }
+    if (ImGui::Checkbox("Show Grid", &mGuiParams.shouldShowGrid)) mHasParamsChanged = true;
+    if (ImGui::Checkbox("Show Tile Allocation", &mGuiParams.shouldShowTileAllocation)) mHasParamsChanged = true;
 
     ImGui::Render();
 }
