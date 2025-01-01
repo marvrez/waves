@@ -151,6 +151,8 @@ void CommandList::SetGraphicsState(const GraphicsState& state)
     assert(state.pipeline->GetPipelineType() == PipelineType::GRAPHICS);
     mCurrentGraphicsState = state;
 
+    if (mIsRendering) this->EndRendering();
+
     uint32_t width = 0, height = 0;
     std::vector<VkRenderingAttachmentInfo> colorAttachments;
     colorAttachments.reserve(state.colorAttachments.size());

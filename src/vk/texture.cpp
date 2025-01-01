@@ -100,7 +100,7 @@ Texture::Texture(const Device& device, TextureDesc desc)
 
         const VkImageCreateInfo imageCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType = VK_IMAGE_TYPE_2D,
+            .imageType = GetImageType(desc.type),
             .format = GetVkFormat(desc.format),
             .extent = {
                 .width = desc.dimensions.x,

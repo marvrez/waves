@@ -137,7 +137,11 @@ void GUI::NewFrame()
         mHasParamsChanged = true;
     }
     if (ImGui::Checkbox("Show Grid", &mGuiParams.shouldShowGrid)) mHasParamsChanged = true;
-    if (ImGui::Checkbox("Show Tile Allocation", &mGuiParams.shouldShowTileAllocation)) mHasParamsChanged = true;
+
+    ImTextureID textureId = mDebugImage.get();
+    if (textureId != 0) {
+        ImGui::Image(textureId, ImVec2(mDebugImage->GetWidth(), mDebugImage->GetHeight()));
+    }
 
     ImGui::Render();
 }
@@ -230,6 +234,10 @@ void GUI::DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, ui
             if (scissorRect.maxX <= scissorRect.minX || scissorRect.maxY <= scissorRect.minY) continue;
             state.viewport.scissorRect = scissorRect;
 
+            Texture* texture = (Texture*)drawCmd->GetTexID();
+            state.bindings = { Binding(texture != 0 ? *texture : *mFontTexture) };
+
+            cmdList->SetGraphicsState(state);
             cmdList->DrawIndexed({
                 .vertexCount = drawCmd->ElemCount,
                 .startVertexLocation = drawCmd->VtxOffset + globalVertexOffset,

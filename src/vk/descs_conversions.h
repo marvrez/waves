@@ -23,7 +23,7 @@ constexpr VkFormat GetVkFormat(Format format)
 
         case Format::RGBA8_UNORM: return VK_FORMAT_R8G8B8A8_UNORM;
         case Format::RGBA8_UINT:  return VK_FORMAT_R8G8B8A8_UINT;
-        case Format::RGBA8_SRGB:  return VK_FORMAT_R8G8B8A8_UNORM;
+        case Format::RGBA8_SRGB:  return VK_FORMAT_R8G8B8A8_SRGB;
 
         case Format::R16_UNORM:  return VK_FORMAT_R16_UNORM;
         case Format::R16_UINT:   return VK_FORMAT_R16_UINT;
@@ -70,6 +70,17 @@ constexpr VkFormat GetVkFormat(Format format)
 static VkImageAspectFlags GetAspectMask(Format format)
 {
     return format == Format::D32_FLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
+constexpr VkImageType GetImageType(TextureType type)
+{
+    switch (type) {
+        case TextureType::TEXTURE_1D: return VK_IMAGE_TYPE_1D;
+        case TextureType::TEXTURE_2D: return VK_IMAGE_TYPE_2D;
+        case TextureType::TEXTURE_3D: return VK_IMAGE_TYPE_3D;
+        case TextureType::COUNT:      return VK_IMAGE_TYPE_MAX_ENUM;
+    }
+    return VK_IMAGE_TYPE_MAX_ENUM; // Shouldn't get here
 }
 
 constexpr VkImageViewType GetImageViewType(TextureType type)

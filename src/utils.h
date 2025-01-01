@@ -49,3 +49,5 @@ template<typename T>
 constexpr T DivRoundUp(T a, T b) { return (a + b - (T)1) / b; }
 template<typename T>
 constexpr T GetAlignedSize(T size, T alignment) { return DivRoundUp(size, alignment) * alignment; }
+template<typename T>
+constexpr T GetAlignedSizeDown(T size, T alignment) { return size - (size % alignment); }

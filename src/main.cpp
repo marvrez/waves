@@ -18,6 +18,8 @@
 #include "vk/buffer.h"
 
 #include "fluid/curved_grid_renderer.h"
+#include "fluid/fluid_renderer.h"
+#include "fluid/raymarch_renderer.h"
 
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 720;
@@ -40,8 +42,10 @@ int main()
     Camera camera = Camera(glm::vec3(0.f, 1.f, -5.f), 0.1f, 1000.f, 100.f);
 
     auto gridRenderer = CurvedGridRenderer(device, swapchain, camera);
+    auto fluidRenderer = FluidRenderer(device, camera, gui);
+    auto rayMarchRenderer = RayMarchRenderer(device);
 
-    Shader blitVS = Shader(device, "blit.vs.spv");
+    Shader blitVS = Shader(device, "fullscreen_quad.vs.spv");
     Shader blitPS = Shader(device, "blit.ps.spv");
     auto blitPipeline = CreateHandle<Pipeline>(
         device , PipelineDesc{
@@ -51,6 +55,8 @@ int main()
         .rasterization = { .primitiveType = PrimitiveType::TRIANGLE_STRIP },
         .depthStencil = { .shouldEnableDepthTesting = true }
     });
+
+    gui.SetDebugImage(rayMarchRenderer.GetRenderTarget());
 
     Timer timer;
     float dt = 0.0f;;
@@ -70,6 +76,14 @@ int main()
         Texture& swapchainTexture = *swapchain.GetTexture(swapchainImageIndex);
 
         gridRenderer.Render(cmdList, swapchainTexture);
+        fluidRenderer.Render(cmdList);
+        rayMarchRenderer.Render(cmdList, RenderArgs{
+            .tileTags = fluidRenderer.GetTileTagsTexture(),
+            .densityTiles = fluidRenderer.GetDensityTilesTexture(),
+            .tilesToRender = fluidRenderer.GetDebugTilesTexture(),
+            .indirectionTiles = fluidRenderer.GetTilesTexture(),
+            .params = gui.GetParams()
+        });
 
         cmdList->SetResourceState(swapchainTexture, ResourceStateBits::PRESENT);
         gui.DrawFrame(cmdList, swapchainTexture, frameIndex);

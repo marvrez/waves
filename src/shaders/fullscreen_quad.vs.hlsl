@@ -6,9 +6,7 @@ struct VSOutput {
 VSOutput main(uint vertexID : SV_VertexID)
 {
     VSOutput output = (VSOutput)0;
-    const uint u = vertexID & 1;
-	const uint v = (vertexID >> 1) & 1;
-    output.pos = float4(float(u) * 2 - 1, 1 - float(v) * 2, 0, 1);
-    output.uv = float2(u, v);
+    output.uv = float2(vertexID & 1, (vertexID >> 1) & 1);
+    output.pos = float4(output.uv * 2 - 1, 0, 1);
     return output;
 }

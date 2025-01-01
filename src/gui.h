@@ -1,5 +1,7 @@
 #pragma on
 
+#include "fluid/structs.h"
+
 class Device;
 class Window;
 class Texture;
@@ -9,25 +11,6 @@ class Texture;
 class Swapchain;
 class CommandList;
 
-enum class DisplayMode : int {
-    DENSITY = 0,
-    VELOCITY = 1,
-    TILE_TAG = 2,
-    DIVERGENCE = 3,
-    JACOBI = 4,
-    RESIDUAL = 5,
-    GRADIENT = 6,
-};
-
-struct GUIParams {
-    float slice = 0.5f;
-    int currentFrame = 0;
-    int targetFrame = 1;
-    DisplayMode displayMode = DisplayMode::DENSITY;
-    int currentLevel = 0;
-    bool shouldShowGrid = false;
-    bool shouldShowTileAllocation = false;
-};
 
 class GUI {
 public:
@@ -36,6 +19,10 @@ public:
 
     void NewFrame();
     void DrawFrame(Handle<CommandList> cmdList, const Texture& renderTarget, uint32_t frameIndex);
+    FluidSimParams GetParams() const { return mGuiParams; }
+    void SetParams(const FluidSimParams& params) { mGuiParams = params; mHasParamsChanged = true; }
+
+    void SetDebugImage(Handle<Texture> image) { mDebugImage = image; }
 
 private:
     void CreateFontTexture();
@@ -45,8 +32,9 @@ private:
     Handle<Texture> mFontTexture;
     std::array<Handle<Buffer>, 2> mVertexBuffers;
     std::array<Handle<Buffer>, 2> mIndexBuffers;
-    GUIParams mGuiParams;
+    FluidSimParams mGuiParams;
     bool mHasParamsChanged = false;
+    Handle<Texture> mDebugImage = nullptr;
 
     const Device& mDevice;
     const Window& mWindow;

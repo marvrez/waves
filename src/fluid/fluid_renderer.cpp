@@ -1,0 +1,200 @@
+#include "fluid_renderer.h"
+
+#include <glm/glm.hpp>
+
+#include "gui.h"
+#include "utils.h"
+
+#include "vk/device.h"
+#include "vk/swapchain.h"
+#include "vk/shader.h"
+#include "vk/command_list.h"
+#include "vk/pipeline.h"
+#include "vk/texture.h"
+#include "vk/buffer.h"
+
+constexpr glm::vec3 kDensityCenter = { 0.5f, 0.1f, 0.5f };
+constexpr glm::vec3 kDensitySize = { 0.05f, 0.05f, 0.05f };
+
+FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gui)
+    : mDevice(device)
+    , mCamera(camera)
+    , mGui(gui)
+{
+    // Set up pipelines
+    const auto MakeComputePipeline = [&](const char* filename) {
+        Shader shader = Shader(device, filename);
+        return CreateHandle<Pipeline>(
+            device, PipelineDesc{
+            .type = PipelineType::COMPUTE,
+            .shaders = { &shader }
+        });
+    };
+    mClearTexturePipeline = MakeComputePipeline("clear_3d_texture.cs.spv");
+    mInitTilesPipeline = MakeComputePipeline("init_tiles.cs.spv");
+    mAllocateTilesPipeline = MakeComputePipeline("allocate_tiles.cs.spv");
+    
+    // Set up buffers
+    const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
+        return CreateHandle<Buffer>(device, BufferDesc{
+            .byteSize = byteSize, .usage = usage, .access = MemoryAccess::DEVICE,
+        });
+    };
+    constexpr int tileSizeBytes = kTotalNumTiles * sizeof(uint32_t);
+    mActiveTilesBuffer = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
+    mFreedTilesBuffer = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
+    mActiveTileAddressesBuffer = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
+
+    // Set up textures
+    const auto& CreateTexture = [&](Format format, uint32_t texSize) {
+        return CreateHandle<Texture>(device, TextureDesc{
+            .dimensions = { texSize, texSize, texSize },
+            .type = TextureType::TEXTURE_3D,
+            .sampler = { .filter = Filter::POINT, .wrapMode = WrapMode::CLAMP_TO_EDGE },
+            .format = format,
+            .usage = TextureUsageBits::SAMPLED | TextureUsageBits::STORAGE,
+        });
+    };
+
+    mDensityTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
+    mVelocityTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
+    mDivergenceTilesTexture = CreateTexture(Format::R32_FLOAT, kTextureSize);
+    mGradientTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
+    mTempTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
+    mDensityAdvectedTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
+    mVelocityAdvectedTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
+
+    for (int i = 0; i < kMaxNumLevels; i++) {
+        mDispatchIndirectArgsBuffer[i] = CreateBuffer(2 * sizeof(glm::uvec3), BufferUsageBits::ARGUMENT);
+        
+        mCounterBuffer[i] = CreateBuffer(sizeof(TilesCounter), BufferUsageBits::STORAGE);
+        mTileDataBuffer[i] = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
+        mTileAddressesBuffer[i] = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
+
+        const int textureSizeAtLevel = (kTextureSize / kTileSize) >> i;
+        mTilesTexture[i] = CreateTexture(Format::RGBA8_UNORM, textureSizeAtLevel);
+        mTileTagsTexture[i] = CreateTexture(Format::R8_UNORM, textureSizeAtLevel);
+        mJacobiTilesTexture[i] = CreateTexture(Format::R32_FLOAT, textureSizeAtLevel);
+        mResidualTilesTexture[i] = CreateTexture(Format::R32_FLOAT, textureSizeAtLevel);
+    }
+}
+
+void FluidRenderer::Render(Handle<CommandList> cmdList)
+{
+    FluidSimParams params = mGui.GetParams();
+    if (params.currentFrame >= params.targetFrame) return;
+    params.currentFrame++;
+    RenderFluid(cmdList, params);
+    mGui.SetParams(params);
+}
+
+void FluidRenderer::ClearTexture(Handle<Texture> texture)
+{
+    constexpr int kWorkGroupDim = 8;
+    constexpr glm::ivec3 groupCount = glm::ivec3(kTextureSize) / kWorkGroupDim;
+    Handle<CommandList> cmdList = mDevice.CreateCommandList();
+    cmdList->Open();
+
+    cmdList->SetResourceState(*texture, ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetComputeState({ .pipeline = mClearTexturePipeline, .bindings = { Binding(*texture) } });
+    cmdList->Dispatch(groupCount.x, groupCount.y, groupCount.z);
+
+    cmdList->Close();
+    mDevice.ExecuteCommandList(cmdList);
+    mDevice.WaitIdle();
+}
+
+void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParams& params)
+{
+    // Calculate the aligned bounds in world space
+    constexpr glm::vec3 worldMin = kDensityCenter - kDensitySize;
+    constexpr glm::vec3 worldMax = kDensityCenter + kDensitySize;
+
+    // Align the minimum and maximum bounds to the nearest tile grid
+    constexpr int alignedMinX = GetAlignedSizeDown(static_cast<int>(worldMin.x * kTextureSize), kTileSize);
+    constexpr int alignedMinY = GetAlignedSizeDown(static_cast<int>(worldMin.y * kTextureSize), kTileSize);
+    constexpr int alignedMinZ = GetAlignedSizeDown(static_cast<int>(worldMin.z * kTextureSize), kTileSize);
+
+    constexpr int alignedMaxX = GetAlignedSize(static_cast<int>(worldMax.x * kTextureSize), kTileSize);
+    constexpr int alignedMaxY = GetAlignedSize(static_cast<int>(worldMax.y * kTextureSize), kTileSize);
+    constexpr int alignedMaxZ = GetAlignedSize(static_cast<int>(worldMax.z * kTextureSize), kTileSize);
+
+    // Calculate the number of invocations in each dimension
+    constexpr int numInvocationsX = (alignedMaxX - alignedMinX) / kTileSize;
+    constexpr int numInvocationsY = (alignedMaxY - alignedMinY) / kTileSize;
+    constexpr int numInvocationsZ = (alignedMaxZ - alignedMinZ) / kTileSize;
+
+    static bool isInitialized = false;
+    if (!isInitialized) {
+        // Clear all textures
+        isInitialized = true;
+        for (int i = 0; i < kMaxNumLevels; ++i) {
+            ClearTexture(mTilesTexture[i]);
+            ClearTexture(mTileTagsTexture[i]);
+        }
+        ClearTexture(mDensityTilesTexture);
+        ClearTexture(mVelocityTilesTexture);
+
+        {
+            auto cmdList = mDevice.CreateCommandList();
+            cmdList->Open();
+
+            // Initialize the tiles
+            const uint32_t numTiles = kTotalNumTiles;
+            cmdList->SetComputeState({ 
+                .pipeline = mInitTilesPipeline,
+                .bindings = { Binding(*mCounterBuffer[0]), Binding(*mTileDataBuffer[0]) },
+                .pushConstants = { .byteSize = sizeof(uint32_t), .data = (void*)&numTiles }
+            });
+            cmdList->Dispatch(1, 1, 1);
+
+            // Allocate the tiles
+            // Offset the group position by the aligned min position where the density is
+            const glm::ivec3 minGroupPosition = glm::ivec3(alignedMinX, alignedMinY, alignedMinZ) / kTileSize;
+            cmdList->SetComputeState({
+                .pipeline = mAllocateTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTilesTexture[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mCounterBuffer[0]),
+                    Binding(*mTileTagsTexture[0]),
+                },
+                .pushConstants = { .byteSize = sizeof(glm::ivec3), .data = (void*)&minGroupPosition }
+            });
+            cmdList->Dispatch(numInvocationsX, numInvocationsY, numInvocationsZ);
+
+            cmdList->Close();
+            mDevice.ExecuteCommandList(cmdList);
+        }
+    }
+}
+
+Handle<Texture> FluidRenderer::GetDebugTilesTexture() const
+{
+    const auto& params = mGui.GetParams();
+    const DisplayMode displayMode = params.displayMode;
+    const int debugLevel = params.currentLevel;
+    switch (displayMode) {
+        case DisplayMode::DENSITY:      return mDensityTilesTexture;
+        case DisplayMode::VELOCITY:     return mVelocityTilesTexture;
+        case DisplayMode::TILE_TAG:     return mTileTagsTexture[debugLevel];
+        case DisplayMode::DIVERGENCE:   return mDivergenceTilesTexture;
+        case DisplayMode::JACOBI:       return mJacobiTilesTexture[debugLevel];
+        case DisplayMode::RESIDUAL:     return mResidualTilesTexture[debugLevel];
+        case DisplayMode::GRADIENT:     return mGradientTilesTexture;
+    }
+    return nullptr;
+}
+
+Handle<Texture> FluidRenderer::GetTileTagsTexture() const
+{
+    const auto& params = mGui.GetParams();
+    return mTileTagsTexture[params.currentLevel];
+}
+
+Handle<Texture> FluidRenderer::GetTilesTexture() const
+{
+    const auto& params = mGui.GetParams();
+    return mTilesTexture[params.currentLevel];
+}
