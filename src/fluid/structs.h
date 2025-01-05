@@ -24,3 +24,13 @@ struct TilesCounter {
     uint32_t numActiveTiles;
     uint32_t numFreedTiles;
 };
+struct IndirectDispatchArgs {
+    // (2, 2 * numActiveTiles, 2) thread groups
+    // We multiply by 2 since all work groups are dispatched with 8x8x8 threads;
+    // ideally, we want 16x16x16, but due to the 1024 workg group invocations
+    // limit, we can't do that). As such, we need to dispatch twice as many work groups.
+    glm::uvec3 gridGroupCount;         
+    // (1, numActiveTiles, 1) thread groups.
+    // Mainly meant for processing all tiles in a flat list.
+    glm::uvec3 flatTileListGroupCount;
+};

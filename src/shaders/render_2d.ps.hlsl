@@ -3,6 +3,12 @@
 [[vk::combinedImageSampler]] [[vk::binding(0, 0)]] SamplerState gTileTagsSampler;
 [[vk::combinedImageSampler]] [[vk::binding(0, 0)]] Texture3D<float> gTileTagsTexture;
 
+[[vk::combinedImageSampler]] [[vk::binding(1, 0)]] SamplerState gVolumeSampler;
+[[vk::combinedImageSampler]] [[vk::binding(1, 0)]] Texture3D<float4> gVolumeTexture;
+
+[[vk::combinedImageSampler]] [[vk::binding(2, 0)]] SamplerState gTilesIndirectionSampler;
+[[vk::combinedImageSampler]] [[vk::binding(2, 0)]] Texture3D<float4> gTilesIndirectionTexture;
+
 struct Parameters {
     bool shouldRenderGrid;
     int displayMode;
@@ -19,6 +25,14 @@ static inline float IsGridBoundary(float2 st)
     );
 }
 
+static inline float4 SampleVolume(float3 uvw, float scale)
+{
+    const float4 tile = gTilesIndirectionTexture.SampleLevel(gTilesIndirectionSampler, uvw, 0);
+    const float3 tileWorldPos = (tile.xyz * 255.0) / 16.0; // In range [0, 15/16]
+    const float3 localCoord = fmod(uvw / scale, 1.0 / 16.0); // In range [0, 1/16]
+    return gVolumeTexture.SampleLevel(gVolumeSampler, tileWorldPos + localCoord, 0);
+}
+
 static inline float4 GetTagColor(float tag)
 {
     // If we're rendering the tile tags, we always render the whole grid
@@ -29,11 +43,15 @@ static inline float4 GetTagColor(float tag)
     return float4(0.0, 0.0, 0.0, 1.0);
 }
 
-static inline float4 GetTileColor(float tag)
+static inline float4 GetTileColor(float3 uvw, float tag)
 {
     if (gParams.displayMode == 2) return float4(tag / 2, 0.0, 0.0, 1.0);
 
     if (tag.x == EMPTY_TILE_TAG) return float4(0.0, 0.0, 0.0, 1.0);
+
+    // Density
+    if (gParams.displayMode == 0) return float4(SampleVolume(uvw, 1.0).xyz, 1.0);
+
     return float4(0.0, 0.0, 0.0, 1.0);
 }
 
@@ -43,7 +61,7 @@ float4 main(float2 uv : TEXCOORD0) : SV_Target
     const float tag = GetUnpackedTileTag(gTileTagsTexture.SampleLevel(gTileTagsSampler, uvw, 0));
 
     const float4 tagColor = GetTagColor(tag);
-    const float4 tileColor = GetTileColor(tag);
+    const float4 tileColor = GetTileColor(uvw, tag);
 
     const float gridFactor = float(gParams.shouldRenderGrid) * IsGridBoundary(fmod(uvw.xy, 1.0 / 16.0));
     return lerp(tileColor, tagColor, gridFactor);

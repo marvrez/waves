@@ -53,7 +53,7 @@ void RayMarchRenderer::Render(Handle<CommandList> cmdList, const RenderArgs& arg
         .pipeline = mPipeline,
         .viewport = Viewport(mRenderTarget->GetWidth(), mRenderTarget->GetHeight()),
         .colorAttachments = {{ .texture = mRenderTarget.get(), .loadOp = LoadOp::CLEAR, .clearColor = glm::vec4(0.f, 0.f, 0.f, 1.f) }},
-        .bindings = { Binding(*args.tileTags) },
+        .bindings = { Binding(*args.tileTags), Binding(*args.tilesToRender), Binding(*args.indirectionTiles) },
         .pushConstants = { .byteSize = sizeof(Render2dPushConstantData), .data = (void*)&pushConstantsData },
     });
     cmdList->Draw({ .vertexCount = 4 });

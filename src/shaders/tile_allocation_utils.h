@@ -12,7 +12,7 @@ uint AllocateTile(int3 tileIndex, float tileTag)
     InterlockedAdd(gOutCounter[0].numTiles, 1, currentTileCount);
 
     const uint tile = gTileData[currentTileCount];
-    gOutTiles[tileIndex] = GetPackedTile(tile);
+    gOutTiles[tileIndex] = GetPackedTile(tile) / 255.0;
     gOutTileTags[tileIndex] = GetPackedTileTag(tileTag);
     gOutTileAddress[currentTileCount] = GetTileAddress(tileIndex);
 

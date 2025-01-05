@@ -61,4 +61,6 @@ private:
     Handle<Pipeline> mClearTexturePipeline;
     Handle<Pipeline> mInitTilesPipeline;
     Handle<Pipeline> mAllocateTilesPipeline;
+    Handle<Pipeline> mGenerateIndirectDispatchArgsPipeline;
+    Handle<Pipeline> mGenerateDensityTilesPipeline;
 };

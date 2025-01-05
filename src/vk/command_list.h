@@ -87,7 +87,7 @@ public:
     void DrawIndexed(const DrawArguments& args);
 
     void Dispatch(uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1);
-    void DispatchIndirect(const Buffer& buffer, uint32_t offset);
+    void DispatchIndirect(const Buffer& buffer, uint32_t offset = 0);
 
     void CopyBuffer(Buffer* dest, uint64_t destOffsetBytes, const Buffer& src, uint64_t srcOffsetBytes, uint64_t dataSizeBytes);
 

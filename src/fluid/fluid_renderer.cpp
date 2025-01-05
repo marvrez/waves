@@ -1,6 +1,7 @@
 #include "fluid_renderer.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtx/component_wise.hpp> 
 
 #include "gui.h"
 #include "utils.h"
@@ -15,6 +16,11 @@
 
 constexpr glm::vec3 kDensityCenter = { 0.5f, 0.1f, 0.5f };
 constexpr glm::vec3 kDensitySize = { 0.05f, 0.05f, 0.05f };
+
+struct GenerateDensityTilesPushConstants {
+    glm::vec3 densityCenter;
+    float densityRadius;
+};
 
 FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gui)
     : mDevice(device)
@@ -33,6 +39,8 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mClearTexturePipeline = MakeComputePipeline("clear_3d_texture.cs.spv");
     mInitTilesPipeline = MakeComputePipeline("init_tiles.cs.spv");
     mAllocateTilesPipeline = MakeComputePipeline("allocate_tiles.cs.spv");
+    mGenerateIndirectDispatchArgsPipeline = MakeComputePipeline("generate_indirect_dispatch_args.cs.spv");
+    mGenerateDensityTilesPipeline = MakeComputePipeline("generate_density_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -65,7 +73,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mVelocityAdvectedTilesTexture = CreateTexture(Format::RGBA32_FLOAT, kTextureSize);
 
     for (int i = 0; i < kMaxNumLevels; i++) {
-        mDispatchIndirectArgsBuffer[i] = CreateBuffer(2 * sizeof(glm::uvec3), BufferUsageBits::ARGUMENT);
+        mDispatchIndirectArgsBuffer[i] = CreateBuffer(sizeof(IndirectDispatchArgs), BufferUsageBits::ARGUMENT | BufferUsageBits::STORAGE);
         
         mCounterBuffer[i] = CreateBuffer(sizeof(TilesCounter), BufferUsageBits::STORAGE);
         mTileDataBuffer[i] = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
@@ -167,6 +175,42 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
             cmdList->Close();
             mDevice.ExecuteCommandList(cmdList);
         }
+    }
+    
+    {
+        auto cmdList = mDevice.CreateCommandList();
+        cmdList->Open();
+
+        // Generate the indirect dispatch arguments
+        {
+            cmdList->SetComputeState({ 
+                .pipeline = mGenerateIndirectDispatchArgsPipeline,
+                .bindings = { Binding(*mCounterBuffer[0]), Binding(*mDispatchIndirectArgsBuffer[0]) }
+            });
+            cmdList->Dispatch(1, 1, 1);
+        }
+
+        // Generate the density tiles
+        {
+            const GenerateDensityTilesPushConstants pushConstants = {
+                .densityCenter = kDensityCenter,
+                .densityRadius = glm::compMax(kDensitySize)
+            };
+            // Generate the indirect dispatch arguments
+            cmdList->SetComputeState({ 
+                .pipeline = mGenerateDensityTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mDensityTilesTexture),
+                },
+                .pushConstants = { .byteSize = sizeof(GenerateDensityTilesPushConstants), .data = (void*)&pushConstants }
+            });
+            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+        }
+
+        cmdList->Close();
+        mDevice.ExecuteCommandList(cmdList);
     }
 }
 
