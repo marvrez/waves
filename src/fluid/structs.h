@@ -34,3 +34,17 @@ struct IndirectDispatchArgs {
     // Mainly meant for processing all tiles in a flat list.
     glm::uvec3 flatTileListGroupCount;
 };
+struct GenerateDensityTilesPushConstants {
+    glm::vec3 densityCenter;
+    float densityRadius;
+};
+
+struct GenerateVelocityTilesPushConstants {
+    glm::vec3 densityCenter;
+    float densityRadius;
+    glm::vec4 velocityAdvectionFactor;
+};
+
+struct AdvectTilesPushConstants {
+    glm::vec4 advectionFactor;
+};

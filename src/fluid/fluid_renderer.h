@@ -64,4 +64,5 @@ private:
     Handle<Pipeline> mGenerateIndirectDispatchArgsPipeline;
     Handle<Pipeline> mGenerateDensityTilesPipeline;
     Handle<Pipeline> mGenerateVelocityTilesPipeline;
+    Handle<Pipeline> mAdvectTilesPipeline;
 };

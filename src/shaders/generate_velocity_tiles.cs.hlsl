@@ -18,7 +18,7 @@ void main(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID)
     const uint tileAddress = gTileAddress[groupId.y / 2];
     const TilePositionData data = GetTilePositionData(tile, tileAddress, id);
 
-    const float distance = length(gParams.densityCenter - data.cellPosition);
+    const float distance = length(gParams.densityCenter - data.tilePosition);
     const float clampedDistanceFactor = max(0.0, gParams.densityRadius - distance);
     gOutVelocity[data.index] = gOutVelocity[data.index] + gParams.velocityAdvectionFactor * clampedDistanceFactor;
 }

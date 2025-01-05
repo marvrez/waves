@@ -17,17 +17,6 @@
 constexpr glm::vec3 kDensityCenter = { 0.5f, 0.1f, 0.5f };
 constexpr glm::vec3 kDensitySize = { 0.05f, 0.05f, 0.05f };
 
-struct GenerateDensityTilesPushConstants {
-    glm::vec3 densityCenter;
-    float densityRadius;
-};
-
-struct GenerateVelocityTilesPushConstants {
-    glm::vec3 densityCenter;
-    float densityRadius;
-    glm::vec4 velocityAdvectionFactor;
-};
-
 FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gui)
     : mDevice(device)
     , mCamera(camera)
@@ -48,6 +37,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mGenerateIndirectDispatchArgsPipeline = MakeComputePipeline("generate_indirect_dispatch_args.cs.spv");
     mGenerateDensityTilesPipeline = MakeComputePipeline("generate_density_tiles.cs.spv");
     mGenerateVelocityTilesPipeline = MakeComputePipeline("generate_velocity_tiles.cs.spv");
+    mAdvectTilesPipeline = MakeComputePipeline("advect_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -234,7 +224,44 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
                 .pushConstants = { .byteSize = sizeof(GenerateVelocityTilesPushConstants), .data = (void*)&pushConstants }
             });
             cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+        }
 
+        // Advect density
+        {
+            const AdvectTilesPushConstants pushConstants = { .advectionFactor = glm::vec4(1.0f) };
+            cmdList->SetResourceState(*mDensityAdvectedTilesTexture, ResourceStateBits::UNORDERED_ACCESS);
+            cmdList->SetComputeState({
+                .pipeline = mAdvectTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mTilesTexture[0]),
+                    Binding(*mDensityTilesTexture),
+                    Binding(*mVelocityTilesTexture),
+                    Binding(*mDensityAdvectedTilesTexture),
+                },
+                .pushConstants = { .byteSize = sizeof(AdvectTilesPushConstants), .data = (void*)&pushConstants }
+            });
+            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+        }
+
+        // Advect velocity
+        {
+            const AdvectTilesPushConstants pushConstants = { .advectionFactor = glm::vec4(1.0f) };
+            cmdList->SetResourceState(*mVelocityAdvectedTilesTexture, ResourceStateBits::UNORDERED_ACCESS);
+            cmdList->SetComputeState({ 
+                .pipeline = mAdvectTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mTilesTexture[0]),
+                    Binding(*mVelocityTilesTexture),
+                    Binding(*mVelocityTilesTexture),
+                    Binding(*mVelocityAdvectedTilesTexture),
+                },
+                .pushConstants = { .byteSize = sizeof(AdvectTilesPushConstants), .data = (void*)&pushConstants }
+            });
+            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
         }
 
         cmdList->Close();
