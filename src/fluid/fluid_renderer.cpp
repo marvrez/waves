@@ -39,6 +39,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mGenerateVelocityTilesPipeline = MakeComputePipeline("generate_velocity_tiles.cs.spv");
     mAdvectTilesPipeline = MakeComputePipeline("advect_tiles.cs.spv");
     mFreeTilesPipeline = MakeComputePipeline("free_tiles.cs.spv");
+    mCommitTilesPipeline = MakeComputePipeline("commit_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -282,6 +283,22 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
                 }
             });
             cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0], offsetof(IndirectDispatchArgs, flatTileListGroupCount));
+        }
+
+        // Commit tiles
+        {
+            cmdList->SetComputeState({ 
+                .pipeline = mCommitTilesPipeline,
+                .bindings = {
+                    Binding(*mActiveTilesBuffer),
+                    Binding(*mActiveTileAddressesBuffer),
+                    Binding(*mFreedTilesBuffer),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mCounterBuffer[0]),
+                    Binding(*mTileAddressesBuffer[0]),
+                }
+            });
+            cmdList->Dispatch(1, 1, 1);
         }
 
         cmdList->Close();

@@ -17,6 +17,7 @@ set(SHADERS_CS
     "generate_velocity_tiles.cs.hlsl"
     "advect_tiles.cs.hlsl"
     "free_tiles.cs.hlsl"
+    "commit_tiles.cs.hlsl"
 )
 set(SHADERS_DS)
 set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl" "render_2d.ps.hlsl")

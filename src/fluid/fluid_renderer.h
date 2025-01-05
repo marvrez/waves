@@ -66,4 +66,5 @@ private:
     Handle<Pipeline> mGenerateVelocityTilesPipeline;
     Handle<Pipeline> mAdvectTilesPipeline;
     Handle<Pipeline> mFreeTilesPipeline;
+    Handle<Pipeline> mCommitTilesPipeline;
 };
