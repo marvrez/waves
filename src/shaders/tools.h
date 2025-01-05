@@ -8,15 +8,17 @@ struct TilesCounter {
     uint numActiveTiles;
     uint numFreedTiles;
 };
+
+// NOTE: W-component is unused. Need the additional dimension since the memory is 16-byte aligned.
 struct IndirectDispatchArgs {
     // (2, 2 * numActiveTiles, 2) thread groups
     // We multiply by 2 since all work groups are dispatched with 8x8x8 threads;
     // ideally, we want 16x16x16, but due to the 1024 work group invocations
     // limit, we can't do that). As such, we need to dispatch twice as many work groups.
-    uint3 gridGroupCount;         
+    uint4 gridGroupCount;         
     // (1, numActiveTiles, 1) thread groups.
     // Mainly meant for processing all tiles in a flat list.
-    uint3 flatTileListGroupCount;
+    uint4 flatTileListGroupCount;
 };
 
 struct TilePositionData {
@@ -31,15 +33,15 @@ static inline uint4 GetTileIndex(uint tile)
     return uint4(tile & 0xF, (tile >> 4) & 0xF, (tile >> 8) & 0xF, 0);
 }
 
+static inline uint GetPackedTileIndex(int3 tileIndex)
+{
+    return tileIndex.x + (tileIndex.y << 4) + (tileIndex.z << 8);
+}
+
 // Each output dimension is in range [0, 256)
 static inline int3 GetGridIndex(uint tile, int3 offset)
 {
     return 16 * int3(GetTileIndex(tile).xyz) + int3(offset.x & 0xF, offset.y & 0xF, offset.z & 0xF);
-}
-
-static inline uint GetPackedTileIndex(int3 tileIndex)
-{
-    return tileIndex.x + (tileIndex.y << 4) + (tileIndex.z << 8);
 }
 
 static inline float GetPackedTileTag(float tileTag)
@@ -51,7 +53,6 @@ static inline float GetUnpackedTileTag(float packedTileTag)
 {
     return packedTileTag * 255.0;
 }
-
 
 static inline TilePositionData GetTilePositionData(uint tile, uint tileAddress, int3 threadId)
 {

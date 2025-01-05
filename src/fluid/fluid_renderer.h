@@ -65,4 +65,5 @@ private:
     Handle<Pipeline> mGenerateDensityTilesPipeline;
     Handle<Pipeline> mGenerateVelocityTilesPipeline;
     Handle<Pipeline> mAdvectTilesPipeline;
+    Handle<Pipeline> mFreeTilesPipeline;
 };

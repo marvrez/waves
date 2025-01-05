@@ -38,6 +38,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mGenerateDensityTilesPipeline = MakeComputePipeline("generate_density_tiles.cs.spv");
     mGenerateVelocityTilesPipeline = MakeComputePipeline("generate_velocity_tiles.cs.spv");
     mAdvectTilesPipeline = MakeComputePipeline("advect_tiles.cs.spv");
+    mFreeTilesPipeline = MakeComputePipeline("free_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -262,6 +263,25 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
                 .pushConstants = { .byteSize = sizeof(AdvectTilesPushConstants), .data = (void*)&pushConstants }
             });
             cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+        }
+
+        // Free tiles with little to no advected density
+        {
+            cmdList->SetResourceState(*mTileTagsTexture[0], ResourceStateBits::UNORDERED_ACCESS);
+            cmdList->SetComputeState({ 
+                .pipeline = mFreeTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mDensityAdvectedTilesTexture),
+                    Binding(*mTileTagsTexture[0]),
+                    Binding(*mCounterBuffer[0]),
+                    Binding(*mActiveTilesBuffer),
+                    Binding(*mFreedTilesBuffer),
+                    Binding(*mActiveTileAddressesBuffer),
+                }
+            });
+            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0], offsetof(IndirectDispatchArgs, flatTileListGroupCount));
         }
 
         cmdList->Close();

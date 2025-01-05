@@ -29,10 +29,10 @@ struct IndirectDispatchArgs {
     // We multiply by 2 since all work groups are dispatched with 8x8x8 threads;
     // ideally, we want 16x16x16, but due to the 1024 workg group invocations
     // limit, we can't do that). As such, we need to dispatch twice as many work groups.
-    glm::uvec3 gridGroupCount;         
+    glm::uvec4 gridGroupCount;         
     // (1, numActiveTiles, 1) thread groups.
     // Mainly meant for processing all tiles in a flat list.
-    glm::uvec3 flatTileListGroupCount;
+    glm::uvec4 flatTileListGroupCount;
 };
 struct GenerateDensityTilesPushConstants {
     glm::vec3 densityCenter;
