@@ -51,6 +51,12 @@ static inline float4 GetTileColor(float3 uvw, float tag)
 
     // Density
     if (gParams.displayMode == 0) return float4(SampleVolume(uvw, 1.0).xyz, 1.0);
+    // Velocity
+    if (gParams.displayMode == 1) {
+        const float4 velocity = SampleVolume(uvw, 1.0);
+        const float4 color = velocity * 0.5 + 0.5;
+        return float4(color.xy, 0.0, 1.0); // Velocity is only advected in the XY plane
+    }
 
     return float4(0.0, 0.0, 0.0, 1.0);
 }

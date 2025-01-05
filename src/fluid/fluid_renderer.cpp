@@ -22,6 +22,12 @@ struct GenerateDensityTilesPushConstants {
     float densityRadius;
 };
 
+struct GenerateVelocityTilesPushConstants {
+    glm::vec3 densityCenter;
+    float densityRadius;
+    glm::vec4 velocityAdvectionFactor;
+};
+
 FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gui)
     : mDevice(device)
     , mCamera(camera)
@@ -41,6 +47,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mAllocateTilesPipeline = MakeComputePipeline("allocate_tiles.cs.spv");
     mGenerateIndirectDispatchArgsPipeline = MakeComputePipeline("generate_indirect_dispatch_args.cs.spv");
     mGenerateDensityTilesPipeline = MakeComputePipeline("generate_density_tiles.cs.spv");
+    mGenerateVelocityTilesPipeline = MakeComputePipeline("generate_velocity_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -190,7 +197,7 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
             cmdList->Dispatch(1, 1, 1);
         }
 
-        // Generate the density tiles
+        // Generate density tiles
         {
             const GenerateDensityTilesPushConstants pushConstants = {
                 .densityCenter = kDensityCenter,
@@ -207,6 +214,27 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
                 .pushConstants = { .byteSize = sizeof(GenerateDensityTilesPushConstants), .data = (void*)&pushConstants }
             });
             cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+        }
+
+        // Generate velocity tiles
+        {
+            const GenerateVelocityTilesPushConstants pushConstants = {
+                .densityCenter = kDensityCenter,
+                .densityRadius = glm::compMax(kDensitySize),
+                .velocityAdvectionFactor = glm::vec4(0.0, 30.3, 0.0, 0.0)
+            };
+            // Generate the indirect dispatch arguments
+            cmdList->SetComputeState({ 
+                .pipeline = mGenerateVelocityTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mVelocityTilesTexture),
+                },
+                .pushConstants = { .byteSize = sizeof(GenerateVelocityTilesPushConstants), .data = (void*)&pushConstants }
+            });
+            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+
         }
 
         cmdList->Close();

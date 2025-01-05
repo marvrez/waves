@@ -8,7 +8,7 @@ set(VK_VERSION "vulkan1.2")
 # Change this variable if you want to use a local dxc executable.
 set(DXC_COMPILER "dxc")
 
-set(SHADERS_CS "clear_3d_texture.cs.hlsl" "init_tiles.cs.hlsl" "allocate_tiles.cs.hlsl" "generate_indirect_dispatch_args.cs.hlsl" "generate_density_tiles.cs.hlsl")
+set(SHADERS_CS "clear_3d_texture.cs.hlsl" "init_tiles.cs.hlsl" "allocate_tiles.cs.hlsl" "generate_indirect_dispatch_args.cs.hlsl" "generate_density_tiles.cs.hlsl" "generate_velocity_tiles.cs.hlsl")
 set(SHADERS_DS)
 set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl" "render_2d.ps.hlsl")
 set(SHADERS_VS "imgui.vs.hlsl" "fullscreen_quad.vs.hlsl" "grid.vs.hlsl")
