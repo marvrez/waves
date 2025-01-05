@@ -40,6 +40,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mAdvectTilesPipeline = MakeComputePipeline("advect_tiles.cs.spv");
     mFreeTilesPipeline = MakeComputePipeline("free_tiles.cs.spv");
     mCommitTilesPipeline = MakeComputePipeline("commit_tiles.cs.spv");
+    mDilateTilesPipeline = MakeComputePipeline("dilate_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -181,13 +182,11 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
         cmdList->Open();
 
         // Generate the indirect dispatch arguments
-        {
-            cmdList->SetComputeState({ 
-                .pipeline = mGenerateIndirectDispatchArgsPipeline,
-                .bindings = { Binding(*mCounterBuffer[0]), Binding(*mDispatchIndirectArgsBuffer[0]) }
-            });
-            cmdList->Dispatch(1, 1, 1);
-        }
+        cmdList->SetComputeState({ 
+            .pipeline = mGenerateIndirectDispatchArgsPipeline,
+            .bindings = { Binding(*mCounterBuffer[0]), Binding(*mDispatchIndirectArgsBuffer[0]) }
+        });
+        cmdList->Dispatch(1, 1, 1);
 
         // Generate density tiles
         {
@@ -267,39 +266,53 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
         }
 
         // Free tiles with little to no advected density
-        {
-            cmdList->SetResourceState(*mTileTagsTexture[0], ResourceStateBits::UNORDERED_ACCESS);
-            cmdList->SetComputeState({ 
-                .pipeline = mFreeTilesPipeline,
-                .bindings = {
-                    Binding(*mTileAddressesBuffer[0]),
-                    Binding(*mTileDataBuffer[0]),
-                    Binding(*mDensityAdvectedTilesTexture),
-                    Binding(*mTileTagsTexture[0]),
-                    Binding(*mCounterBuffer[0]),
-                    Binding(*mActiveTilesBuffer),
-                    Binding(*mFreedTilesBuffer),
-                    Binding(*mActiveTileAddressesBuffer),
-                }
-            });
-            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0], offsetof(IndirectDispatchArgs, flatTileListGroupCount));
-        }
+        cmdList->SetResourceState(*mTileTagsTexture[0], ResourceStateBits::UNORDERED_ACCESS);
+        cmdList->SetComputeState({ 
+            .pipeline = mFreeTilesPipeline,
+            .bindings = {
+                Binding(*mTileAddressesBuffer[0]),
+                Binding(*mTileDataBuffer[0]),
+                Binding(*mDensityAdvectedTilesTexture),
+                Binding(*mTileTagsTexture[0]),
+                Binding(*mCounterBuffer[0]),
+                Binding(*mActiveTilesBuffer),
+                Binding(*mFreedTilesBuffer),
+                Binding(*mActiveTileAddressesBuffer),
+            }
+        });
+        cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0], offsetof(IndirectDispatchArgs, flatTileListGroupCount));
 
         // Commit tiles
-        {
-            cmdList->SetComputeState({ 
-                .pipeline = mCommitTilesPipeline,
-                .bindings = {
-                    Binding(*mActiveTilesBuffer),
-                    Binding(*mActiveTileAddressesBuffer),
-                    Binding(*mFreedTilesBuffer),
-                    Binding(*mTileDataBuffer[0]),
-                    Binding(*mCounterBuffer[0]),
-                    Binding(*mTileAddressesBuffer[0]),
-                }
-            });
-            cmdList->Dispatch(1, 1, 1);
-        }
+        cmdList->SetComputeState({ 
+            .pipeline = mCommitTilesPipeline,
+            .bindings = {
+                Binding(*mActiveTilesBuffer),
+                Binding(*mActiveTileAddressesBuffer),
+                Binding(*mFreedTilesBuffer),
+                Binding(*mTileDataBuffer[0]),
+                Binding(*mCounterBuffer[0]),
+                Binding(*mTileAddressesBuffer[0]),
+            }
+        });
+        cmdList->Dispatch(1, 1, 1);
+
+        // Dilate tiles
+        cmdList->SetResourceState(*mTilesTexture[0], ResourceStateBits::UNORDERED_ACCESS);
+        cmdList->SetResourceState(*mTileTagsTexture[0], ResourceStateBits::UNORDERED_ACCESS);
+        cmdList->SetResourceState(*mVelocityAdvectedTilesTexture, ResourceStateBits::UNORDERED_ACCESS);
+        cmdList->SetComputeState({ 
+            .pipeline = mDilateTilesPipeline,
+            .bindings = {
+                Binding(*mTileAddressesBuffer[0]),
+                Binding(*mTilesTexture[0]),
+                Binding(*mTileDataBuffer[0]),
+                Binding(*mCounterBuffer[0]),
+                Binding(*mTileTagsTexture[0]),
+                Binding(*mVelocityAdvectedTilesTexture),
+            }
+        });
+        constexpr glm::uvec3 kDilateTilesGroupCount = glm::uvec3(kTileSize / kThreadGroupSize);
+        cmdList->Dispatch(kDilateTilesGroupCount.x, kDilateTilesGroupCount.y, kDilateTilesGroupCount.z);
 
         cmdList->Close();
         mDevice.ExecuteCommandList(cmdList);

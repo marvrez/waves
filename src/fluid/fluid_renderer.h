@@ -12,6 +12,7 @@ constexpr unsigned numBitsNeeded(unsigned n) { return n <= 1 ? 0 : 1 + numBitsNe
 constexpr int kTileSize = 16;
 constexpr int kMaxNumLevels = numBitsNeeded(16); // log2(kTileSize) level of tiles
 constexpr int kTextureSize = 256;
+constexpr int kThreadGroupSize = 8;
 constexpr int kTotalNumTiles = (kTextureSize / kTileSize) * (kTextureSize / kTileSize) * (kTextureSize / kTileSize);
 
 class FluidRenderer {
@@ -67,4 +68,5 @@ private:
     Handle<Pipeline> mAdvectTilesPipeline;
     Handle<Pipeline> mFreeTilesPipeline;
     Handle<Pipeline> mCommitTilesPipeline;
+    Handle<Pipeline> mDilateTilesPipeline;
 };
