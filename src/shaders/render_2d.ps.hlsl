@@ -45,6 +45,7 @@ static inline float4 GetTagColor(float tag)
 
 static inline float4 GetTileColor(float3 uvw, float tag)
 {
+    // Tile tag
     if (gParams.displayMode == 2) return float4(tag / 2, 0.0, 0.0, 1.0);
 
     if (tag.x == EMPTY_TILE_TAG) return float4(0.0, 0.0, 0.0, 1.0);
@@ -56,6 +57,12 @@ static inline float4 GetTileColor(float3 uvw, float tag)
         const float4 velocity = SampleVolume(uvw, 1.0);
         const float4 color = velocity * 0.5 + 0.5;
         return float4(color.xy, 0.0, 1.0); // Velocity is only advected in the XY plane
+    }
+    // Divergence
+    if (gParams.displayMode == 3) {
+        const float pressure = SampleVolume(uvw, 1.0).x;
+        const float3 color = Heatmap(pressure);
+        return float4(color, 1.0);
     }
 
     return float4(0.0, 0.0, 0.0, 1.0);

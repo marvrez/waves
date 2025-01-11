@@ -69,4 +69,5 @@ private:
     Handle<Pipeline> mFreeTilesPipeline;
     Handle<Pipeline> mCommitTilesPipeline;
     Handle<Pipeline> mDilateTilesPipeline;
+    Handle<Pipeline> mGenerateDivergenceTilesPipeline;
 };

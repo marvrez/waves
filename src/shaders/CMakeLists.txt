@@ -15,6 +15,7 @@ set(SHADERS_CS
     "generate_indirect_dispatch_args.cs.hlsl"
     "generate_density_tiles.cs.hlsl"
     "generate_velocity_tiles.cs.hlsl"
+    "generate_divergence_tiles.cs.hlsl"
     "advect_tiles.cs.hlsl"
     "free_tiles.cs.hlsl"
     "commit_tiles.cs.hlsl"

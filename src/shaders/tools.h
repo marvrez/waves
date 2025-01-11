@@ -70,3 +70,30 @@ static inline float4 LoadTile(Texture3D<float4> tileTexture, Texture3D<float4> t
     const int3 baseTileIndex = int3(tile.xyz * 255.0);
     return targetTexture.Load(int4(16 * baseTileIndex + offset, 0));
 }
+
+float3 Heatmap(float t)
+{
+    const float3 c[10] = {
+        { 0.0f / 255.0f,   2.0f / 255.0f,    91.0f / 255.0f },
+        { 0.0f / 255.0f, 108.0f / 255.0f,   251.0f / 255.0f },
+        { 0.0f / 255.0f, 221.0f / 255.0f,   221.0f / 255.0f },
+        { 51.0f / 255.0f, 221.0f / 255.0f,    0.0f / 255.0f },
+        { 255.0f / 255.0f, 252.0f / 255.0f,   0.0f / 255.0f },
+        { 255.0f / 255.0f, 180.0f / 255.0f,   0.0f / 255.0f },
+        { 255.0f / 255.0f, 104.0f / 255.0f,   0.0f / 255.0f },
+        { 226.0f / 255.0f,  22.0f / 255.0f,   0.0f / 255.0f },
+        { 191.0f / 255.0f,   0.0f / 255.0f,  83.0f / 255.0f },
+        { 145.0f / 255.0f,   0.0f / 255.0f,  65.0f / 255.0f }
+    };
+
+    const float s = t * 10.0f;
+    const int cur = int(s) <= 9 ? int(s) : 9;
+    const int prv = cur >= 1 ? cur - 1 : 0, nxt = cur < 9 ? cur + 1 : 9;
+
+    const float blur = 0.8f;
+    const float wc = smoothstep(float(cur) - blur, float(cur) + blur, s) * (1.0f - smoothstep(float(cur + 1) - blur, float(cur + 1) + blur, s));
+    const float wp = 1.0f - smoothstep(float(cur) - blur, float(cur) + blur, s), wn = smoothstep(float(cur + 1) - blur, float(cur + 1) + blur, s);
+
+    const float3 r = wc * c[cur] + wp * c[prv] + wn * c[nxt];
+    return saturate(float3(r.x, r.y, r.z));
+}

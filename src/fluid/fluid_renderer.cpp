@@ -41,6 +41,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mFreeTilesPipeline = MakeComputePipeline("free_tiles.cs.spv");
     mCommitTilesPipeline = MakeComputePipeline("commit_tiles.cs.spv");
     mDilateTilesPipeline = MakeComputePipeline("dilate_tiles.cs.spv");
+    mGenerateDivergenceTilesPipeline = MakeComputePipeline("generate_divergence_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -313,6 +314,29 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
         });
         constexpr glm::uvec3 kDilateTilesGroupCount = glm::uvec3(kTileSize / kThreadGroupSize);
         cmdList->Dispatch(kDilateTilesGroupCount.x, kDilateTilesGroupCount.y, kDilateTilesGroupCount.z);
+
+        // With the tiles freed and dilated, generate the indirect dispatch arguments
+        cmdList->SetComputeState({
+            .pipeline = mGenerateIndirectDispatchArgsPipeline,
+            .bindings = { Binding(*mCounterBuffer[0]), Binding(*mDispatchIndirectArgsBuffer[0]) }
+        });
+        cmdList->Dispatch(1, 1, 1);
+
+        // Generate divergence tiles
+        {
+            cmdList->SetResourceState(*mDivergenceTilesTexture, ResourceStateBits::UNORDERED_ACCESS);
+            cmdList->SetComputeState({
+                .pipeline = mGenerateDivergenceTilesPipeline,
+                .bindings = {
+                    Binding(*mTileAddressesBuffer[0]),
+                    Binding(*mTileDataBuffer[0]),
+                    Binding(*mTilesTexture[0]),
+                    Binding(*mVelocityAdvectedTilesTexture),
+                    Binding(*mDivergenceTilesTexture),
+                }
+            });
+            cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+        }
 
         cmdList->Close();
         mDevice.ExecuteCommandList(cmdList);
