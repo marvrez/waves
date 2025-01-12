@@ -55,6 +55,8 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mAllocateCoarserTilesPipeline = MakeComputePipeline("allocate_coarser_tiles.cs.spv");
     mDownscaleTilesPipeline = MakeComputePipeline("downscale_tiles.cs.spv");
     mUpscaleTilesPipeline = MakeComputePipeline("upscale_tiles.cs.spv");
+    mGenerateGradientTilesPipeline = MakeComputePipeline("generate_gradient_tiles.cs.spv");
+    mCopyTilesPipeline = MakeComputePipeline("copy_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -364,6 +366,49 @@ void FluidRenderer::RenderFluid(Handle<CommandList> _, const FluidSimParams& par
 
         // Perform a Multigrid V-Cycle to iteratively solve the Poisson equation
         VCycle(cmdList, mDivergenceTilesTexture, 0, kMaxNumLevels - 1);
+
+        // Compute the gradient of the pressure field
+        constexpr float scale = 0.5f; // 0.5f / gridScale
+        cmdList->SetResourceState(*mGradientTilesTexture, ResourceStateBits::UNORDERED_ACCESS);
+        cmdList->SetComputeState({
+            .pipeline = mGenerateGradientTilesPipeline,
+            .bindings = {
+                Binding(*mTileAddressesBuffer[0]),
+                Binding(*mTileDataBuffer[0]),
+                Binding(*mJacobiTilesTexture[0]),
+                Binding(*mVelocityAdvectedTilesTexture),
+                Binding(*mTilesTexture[0]),
+                Binding(*mGradientTilesTexture),
+            },
+            .pushConstants = { .byteSize = sizeof(float), .data = (void*)&scale }
+        });
+        cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+
+        // Copy the velocity field to the next frame
+        cmdList->SetComputeState({
+            .pipeline = mCopyTilesPipeline,
+            .bindings = {
+                Binding(*mTileAddressesBuffer[0]),
+                Binding(*mTileDataBuffer[0]),
+                Binding(*mTilesTexture[0]),
+                Binding(*mGradientTilesTexture),
+                Binding(*mVelocityTilesTexture),
+            }
+        });
+        cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
+
+        // Copy the density field to the next frame
+        cmdList->SetComputeState({
+            .pipeline = mCopyTilesPipeline,
+            .bindings = {
+                Binding(*mTileAddressesBuffer[0]),
+                Binding(*mTileDataBuffer[0]),
+                Binding(*mTilesTexture[0]),
+                Binding(*mDensityAdvectedTilesTexture),
+                Binding(*mDensityTilesTexture),
+            }
+        });
+        cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
 
         cmdList->Close();
         mDevice.ExecuteCommandList(cmdList);

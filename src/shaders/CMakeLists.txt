@@ -26,6 +26,8 @@ set(SHADERS_CS
     "allocate_coarser_tiles.cs.hlsl"
     "downscale_tiles.cs.hlsl"
     "upscale_tiles.cs.hlsl"
+    "generate_gradient_tiles.cs.hlsl"
+    "copy_tiles.cs.hlsl"
 )
 set(SHADERS_DS)
 set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl" "render_2d.ps.hlsl")

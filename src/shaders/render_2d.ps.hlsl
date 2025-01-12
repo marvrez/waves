@@ -64,6 +64,11 @@ static inline float4 GetTileColor(float3 uvw, float tag)
         const float3 color = Heatmap(value);
         return float4(color, 1.0);
     }
+    // Gradient
+    if (gParams.displayMode == 6) {
+        const float2 gradient = SampleVolume(uvw, 1.0).xy + 0.5;
+        return float4(gradient, 0.0, 1.0);
+    }
 
     return float4(0.0, 0.0, 0.0, 1.0);
 }

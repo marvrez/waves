@@ -91,4 +91,6 @@ private:
     Handle<Pipeline> mAllocateCoarserTilesPipeline;
     Handle<Pipeline> mDownscaleTilesPipeline;
     Handle<Pipeline> mUpscaleTilesPipeline;
+    Handle<Pipeline> mGenerateGradientTilesPipeline;
+    Handle<Pipeline> mCopyTilesPipeline;
 };
