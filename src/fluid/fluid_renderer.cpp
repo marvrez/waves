@@ -82,11 +82,12 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
         mTileDataBuffer[i] = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
         mTileAddressesBuffer[i] = CreateBuffer(tileSizeBytes, BufferUsageBits::STORAGE);
 
+        mJacobiTilesTexture[i] = CreateTexture(Format::R32_FLOAT, kTextureSize);
+        mResidualTilesTexture[i] = CreateTexture(Format::R32_FLOAT, kTextureSize);
+
         const int textureSizeAtLevel = (kTextureSize / kTileSize) >> i;
         mTilesTexture[i] = CreateTexture(Format::RGBA8_UNORM, textureSizeAtLevel);
         mTileTagsTexture[i] = CreateTexture(Format::R8_UNORM, textureSizeAtLevel);
-        mJacobiTilesTexture[i] = CreateTexture(Format::R32_FLOAT, textureSizeAtLevel);
-        mResidualTilesTexture[i] = CreateTexture(Format::R32_FLOAT, textureSizeAtLevel);
     }
 }
 
@@ -125,7 +126,7 @@ void FluidRenderer::ClearTiles(Handle<CommandList> cmdList, Handle<Texture> tile
     cmdList->DispatchIndirect(*indirectDispatchArgs);
 }
 
-void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParams& params)
+void FluidRenderer::RenderFluid(Handle<CommandList> _, const FluidSimParams& params)
 {
     // Calculate the aligned bounds in world space
     constexpr glm::vec3 worldMin = kDensityCenter - kDensitySize;
@@ -350,19 +351,21 @@ void FluidRenderer::RenderFluid(Handle<CommandList> cmdList, const FluidSimParam
             cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[0]);
         }
 
+        // Perform a Multigrid V-Cycle to iteratively solve the Poisson equation
+        VCycle(cmdList, mDivergenceTilesTexture, 0, kMaxNumLevels - 1);
+
         cmdList->Close();
         mDevice.ExecuteCommandList(cmdList);
     }
-
-    VCycle(cmdList, mDivergenceTilesTexture, 0, kMaxNumLevels);
 }
 
 void FluidRenderer::Jacobi(Handle<CommandList> cmdList, const JacobiParams& params)
 {
     const JacobiPushConstants pushConstants = { .alpha = params.hSquare, .omega = 6.0f / 7.0f };
     for (int i = 0; i < params.numIterations; ++i) {
-        Handle<Texture> srcJacobi = i % 2 == 0 ? params.u : mTempTilesTexture;
+        Handle<Texture> srcJacobi = i % 2 == 0       ? params.u : mTempTilesTexture;
         Handle<Texture> dstJacobi = (i + 1) % 2 == 0 ? params.u : mTempTilesTexture;
+        cmdList->SetResourceState(*srcJacobi, ResourceStateBits::UNORDERED_ACCESS);
         cmdList->SetResourceState(*dstJacobi, ResourceStateBits::UNORDERED_ACCESS);
         cmdList->SetComputeState({
             .pipeline = mGenerateJacobiTilesPipeline,
@@ -370,8 +373,8 @@ void FluidRenderer::Jacobi(Handle<CommandList> cmdList, const JacobiParams& para
                 Binding(*params.tileAddresses),
                 Binding(*params.tileData),
                 Binding(*params.tilesIndirections),
-                Binding(*srcJacobi),
                 Binding(*params.rhs),
+                Binding(*srcJacobi),
                 Binding(*dstJacobi),
             },
             .pushConstants = { .byteSize = sizeof(JacobiPushConstants), .data = (void*)&pushConstants }
@@ -381,7 +384,7 @@ void FluidRenderer::Jacobi(Handle<CommandList> cmdList, const JacobiParams& para
 }
 
 // See https://people.eecs.berkeley.edu/~demmel/cs267/lecture25/lecture25.html
-void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int level, int maxLevels)
+void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int level, int maxLevel)
 {
     const JacobiParams jacobiParams = {
         .u = mJacobiTilesTexture[level],
@@ -391,12 +394,12 @@ void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int
         .tileAddresses = mTileAddressesBuffer[level],
         .dispatchIndirectArgs = mDispatchIndirectArgsBuffer[level],
         .hSquare = float(level + 1),
-        .numIterations = level == maxLevels ? 80 : 4, // More iterations at the coarsest level
+        .numIterations = level == maxLevel ? 80 : 4, // More iterations at the coarsest level
     };
-    ClearTiles(cmdList, mJacobiTilesTexture[level], mTileDataBuffer[level], mDispatchIndirectArgsBuffer[level]);
+    ClearTiles(cmdList, jacobiParams.u, jacobiParams.tileData, jacobiParams.dispatchIndirectArgs);
     Jacobi(cmdList, jacobiParams);
 
-    if (level == maxLevels) return;
+    if (level == maxLevel) return;
 }
 
 Handle<Texture> FluidRenderer::GetDebugTilesTexture() const

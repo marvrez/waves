@@ -3,8 +3,8 @@
 [[vk::binding(0, 0)]] StructuredBuffer<uint> gTileAddresses;
 [[vk::binding(1, 0)]] StructuredBuffer<uint> gTiles;
 [[vk::binding(2, 0)]] Texture3D<float4> gTilesIndirectionTexture;
-[[vk::binding(3, 0)]] Texture3D<float4> gUtexture;
-[[vk::binding(4, 0)]] Texture3D<float4> gRHStexture;
+[[vk::binding(3, 0)]] Texture3D<float4> gRHStexture;
+[[vk::binding(4, 0)]] Texture3D<float4> gUtexture;
 [[vk::binding(5, 0)]] RWTexture3D<float4> gOutTexture;
 
 struct Parameters { float alpha; float omega; };
