@@ -14,6 +14,16 @@ constexpr int kMaxNumLevels = numBitsNeeded(16); // log2(kTileSize) level of til
 constexpr int kTextureSize = 256;
 constexpr int kThreadGroupSize = 8;
 constexpr int kTotalNumTiles = (kTextureSize / kTileSize) * (kTextureSize / kTileSize) * (kTextureSize / kTileSize);
+struct JacobiParams {
+    Handle<Texture> u;                    // The current solution texture (input/output for Jacobi iterations)
+    Handle<Texture> rhs;                  // The right-hand side texture (constant source term for the problem)
+    Handle<Texture> tilesIndirections;    // The tiles texture (used to map spatial domains or regions)
+    Handle<Buffer> tileData;              // The buffer holding data for individual tiles
+    Handle<Buffer> tileAddresses;         // The buffer storing addresses or indices for accessing tiles
+    Handle<Buffer> dispatchIndirectArgs;  // The buffer used for indirect dispatch arguments
+    float hSquare;                        // The square of the grid spacing (spatial step size squared)
+    int numIterations;                    // The total number of Jacobi iterations to perform
+};
 
 class FluidRenderer {
 public:
@@ -29,6 +39,9 @@ public:
 private:
     void RenderFluid(Handle<CommandList> cmdList, const FluidSimParams& params);
     void ClearTexture(Handle<Texture> texture);
+    void ClearTiles(Handle<CommandList> cmdList, Handle<Texture> tilesTextureToClear, Handle<Buffer> tilesBuffer, Handle<Buffer> indirectDispatchArgs);
+    void Jacobi(Handle<CommandList> cmdList, const JacobiParams& params);
+    void VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int level, int maxLevels);
 
     const Device& mDevice;
     const Camera& mCamera;
@@ -70,4 +83,6 @@ private:
     Handle<Pipeline> mCommitTilesPipeline;
     Handle<Pipeline> mDilateTilesPipeline;
     Handle<Pipeline> mGenerateDivergenceTilesPipeline;
+    Handle<Pipeline> mClearTilesPipeline;
+    Handle<Pipeline> mGenerateJacobiTilesPipeline;
 };

@@ -20,6 +20,8 @@ set(SHADERS_CS
     "free_tiles.cs.hlsl"
     "commit_tiles.cs.hlsl"
     "dilate_tiles.cs.hlsl"
+    "clear_tiles.cs.hlsl"
+    "generate_jacobi_tiles.cs.hlsl"
 )
 set(SHADERS_DS)
 set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl" "render_2d.ps.hlsl")

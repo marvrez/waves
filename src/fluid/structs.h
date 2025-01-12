@@ -48,3 +48,8 @@ struct GenerateVelocityTilesPushConstants {
 struct AdvectTilesPushConstants {
     glm::vec4 advectionFactor;
 };
+
+struct JacobiPushConstants {
+    float alpha;
+    float omega;
+};
