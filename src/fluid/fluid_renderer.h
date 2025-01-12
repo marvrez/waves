@@ -1,4 +1,5 @@
 #include "fluid/structs.h"
+#include "texture_pool.h"
 
 class Device;
 class Buffer;
@@ -46,6 +47,7 @@ private:
     const Device& mDevice;
     const Camera& mCamera;
     GUI& mGui;
+    TexturePool mTexturePool;
 
     // Textures
     Handle<Texture> mTilesTexture[kMaxNumLevels];
@@ -87,4 +89,5 @@ private:
     Handle<Pipeline> mGenerateJacobiTilesPipeline;
     Handle<Pipeline> mGenerateResidualTilesPipeline;
     Handle<Pipeline> mAllocateCoarserTilesPipeline;
+    Handle<Pipeline> mDownscaleTilesPipeline;
 };

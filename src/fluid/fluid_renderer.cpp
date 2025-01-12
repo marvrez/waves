@@ -21,6 +21,13 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     : mDevice(device)
     , mCamera(camera)
     , mGui(gui)
+    , mTexturePool(device, TextureDesc{
+        .dimensions = { kTextureSize, kTextureSize, kTextureSize },
+        .type = TextureType::TEXTURE_3D,
+        .format = Format::RGBA32_FLOAT,
+        .sampler = { .filter = Filter::POINT, .wrapMode = WrapMode::CLAMP_TO_EDGE },
+        .usage = TextureUsageBits::STORAGE | TextureUsageBits::SAMPLED,
+    })
 {
     // Set up pipelines
     const auto MakeComputePipeline = [&](const char* filename) {
@@ -46,6 +53,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mGenerateJacobiTilesPipeline = MakeComputePipeline("generate_jacobi_tiles.cs.spv");
     mGenerateResidualTilesPipeline = MakeComputePipeline("generate_residual_tiles.cs.spv");
     mAllocateCoarserTilesPipeline = MakeComputePipeline("allocate_coarser_tiles.cs.spv");
+    mDownscaleTilesPipeline = MakeComputePipeline("downscale_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -385,7 +393,7 @@ void FluidRenderer::Jacobi(Handle<CommandList> cmdList, const JacobiParams& para
     }
 }
 
-// See https://people.eecs.berkeley.edu/~demmel/cs267/lecture25/lecture25.html
+// See https://people.eecs.berkeley.edu/~demmel/cs267/lecture25/lecture25.html, https://math.mit.edu/~stoopn/18.086/Lecture16.pdf
 void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int level, int maxLevel)
 {
     const JacobiParams jacobiParams = {
@@ -454,6 +462,30 @@ void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int
         .bindings = { Binding(*mCounterBuffer[level + 1]), Binding(*mDispatchIndirectArgsBuffer[level + 1]) }
     });
     cmdList->Dispatch(1, 1, 1);
+
+    // Downsample the residual (aka restriction)
+    auto nextRhs = mTexturePool.Acquire();
+    cmdList->SetResourceState(*nextRhs, ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetResourceState(*mResidualTilesTexture[level], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetResourceState(*mTilesTexture[level], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetComputeState({
+        .pipeline = mDownscaleTilesPipeline,
+        .bindings = {
+            Binding(*mTileAddressesBuffer[level + 1]),
+            Binding(*mTileDataBuffer[level + 1]),
+            Binding(*mTilesTexture[level]),
+            Binding(*mResidualTilesTexture[level]),
+            Binding(*nextRhs),
+        }
+    });
+    cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[level + 1]);
+
+    // Solve the next level
+    VCycle(cmdList, nextRhs, level + 1, maxLevel);
+
+    mTexturePool.Release(nextRhs);
+
+    // Upscale/interpolate from the coarse level back to the finer level (aka prolongation)
 
 }
 
