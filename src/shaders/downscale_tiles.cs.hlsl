@@ -3,10 +3,10 @@
 [[vk::binding(0, 0)]] StructuredBuffer<uint> gCoarseTileAddresses;
 [[vk::binding(1, 0)]] StructuredBuffer<uint> gCoarseTiles;
 [[vk::binding(2, 0)]] Texture3D<float4> gTilesIndirectionTexture;
-[[vk::binding(3, 0)]] Texture3D<float4> gInputTexture;
+[[vk::binding(3, 0)]] Texture3D<float4> gResidualTexture;
 [[vk::binding(4, 0)]] RWTexture3D<float4> gOutTexture;
 
-#define LoadResidual(idx) LoadTile(gTilesIndirectionTexture, gInputTexture, idx)
+#define LoadResidual(idx) LoadTile(gTilesIndirectionTexture, gResidualTexture, idx)
 #define DX int3(1, 0, 0)
 #define DY int3(0, 1, 0)
 #define DZ int3(0, 0, 1)

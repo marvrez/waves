@@ -54,6 +54,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mGenerateResidualTilesPipeline = MakeComputePipeline("generate_residual_tiles.cs.spv");
     mAllocateCoarserTilesPipeline = MakeComputePipeline("allocate_coarser_tiles.cs.spv");
     mDownscaleTilesPipeline = MakeComputePipeline("downscale_tiles.cs.spv");
+    mUpscaleTilesPipeline = MakeComputePipeline("upscale_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -485,8 +486,21 @@ void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int
 
     mTexturePool.Release(nextRhs);
 
-    // Upscale/interpolate from the coarse level back to the finer level (aka prolongation)
-
+    // Upscale/interpolate from the coarse level back (e.g. level1) to the finer level (to e.g. level0) (aka prolongation)
+    cmdList->SetResourceState(*mJacobiTilesTexture[level], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetComputeState({
+        .pipeline = mUpscaleTilesPipeline,
+        .bindings = {
+            Binding(*mTileAddressesBuffer[level]),
+            Binding(*mTileDataBuffer[level]),
+            Binding(*mTilesTexture[level + 1]),
+            Binding(*mJacobiTilesTexture[level + 1]),
+            Binding(*mJacobiTilesTexture[level]),
+        }
+    });
+    cmdList->DispatchIndirect(*mDispatchIndirectArgsBuffer[level]);
+    // Finally, perform Jacobi iterations on the refined solution
+    Jacobi(cmdList, jacobiParams);
 }
 
 Handle<Texture> FluidRenderer::GetDebugTilesTexture() const

@@ -90,4 +90,5 @@ private:
     Handle<Pipeline> mGenerateResidualTilesPipeline;
     Handle<Pipeline> mAllocateCoarserTilesPipeline;
     Handle<Pipeline> mDownscaleTilesPipeline;
+    Handle<Pipeline> mUpscaleTilesPipeline;
 };
