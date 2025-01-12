@@ -86,4 +86,5 @@ private:
     Handle<Pipeline> mClearTilesPipeline;
     Handle<Pipeline> mGenerateJacobiTilesPipeline;
     Handle<Pipeline> mGenerateResidualTilesPipeline;
+    Handle<Pipeline> mAllocateCoarserTilesPipeline;
 };

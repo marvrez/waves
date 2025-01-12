@@ -45,6 +45,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mClearTilesPipeline = MakeComputePipeline("clear_tiles.cs.spv");
     mGenerateJacobiTilesPipeline = MakeComputePipeline("generate_jacobi_tiles.cs.spv");
     mGenerateResidualTilesPipeline = MakeComputePipeline("generate_residual_tiles.cs.spv");
+    mAllocateCoarserTilesPipeline = MakeComputePipeline("allocate_coarser_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -418,6 +419,42 @@ void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int
         .pushConstants = { .byteSize = sizeof(float), .data = (void*)&hSquaredRcp }
     });
     cmdList->DispatchIndirect(*jacobiParams.dispatchIndirectArgs);
+
+    // Start on the next level
+
+    // Initialize the tiles at the next level
+    const uint32_t numTiles = uint32_t(float(kTotalNumTiles) / powf(2, level + 1));
+    cmdList->SetComputeState({
+        .pipeline = mInitTilesPipeline,
+        .bindings = { Binding(*mCounterBuffer[level + 1]), Binding(*mTileDataBuffer[level + 1]) },
+        .pushConstants = { .byteSize = sizeof(uint32_t), .data = (void*)&numTiles }
+    });
+    cmdList->Dispatch(1, 1, 1);
+
+    // Create the next level's indirection map
+    cmdList->SetResourceState(*mTileTagsTexture[level], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetResourceState(*mTileTagsTexture[level + 1], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetResourceState(*mTilesTexture[level + 1], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetComputeState({
+        .pipeline = mAllocateCoarserTilesPipeline,
+        .bindings = {
+            Binding(*mTileDataBuffer[level + 1]),
+            Binding(*mTileTagsTexture[level]),
+            Binding(*mTileAddressesBuffer[level + 1]),
+            Binding(*mTilesTexture[level + 1]),
+            Binding(*mCounterBuffer[level + 1]),
+            Binding(*mTileTagsTexture[level + 1]),
+        }
+    });
+    cmdList->Dispatch(1, 1, 1);
+
+    // Update indirect args for the next level
+    cmdList->SetComputeState({
+        .pipeline = mGenerateIndirectDispatchArgsPipeline,
+        .bindings = { Binding(*mCounterBuffer[level + 1]), Binding(*mDispatchIndirectArgsBuffer[level + 1]) }
+    });
+    cmdList->Dispatch(1, 1, 1);
+
 }
 
 Handle<Texture> FluidRenderer::GetDebugTilesTexture() const
