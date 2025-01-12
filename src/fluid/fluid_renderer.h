@@ -85,4 +85,5 @@ private:
     Handle<Pipeline> mGenerateDivergenceTilesPipeline;
     Handle<Pipeline> mClearTilesPipeline;
     Handle<Pipeline> mGenerateJacobiTilesPipeline;
+    Handle<Pipeline> mGenerateResidualTilesPipeline;
 };

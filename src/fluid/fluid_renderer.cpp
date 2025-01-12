@@ -44,6 +44,7 @@ FluidRenderer::FluidRenderer(const Device& device, const Camera& camera, GUI& gu
     mGenerateDivergenceTilesPipeline = MakeComputePipeline("generate_divergence_tiles.cs.spv");
     mClearTilesPipeline = MakeComputePipeline("clear_tiles.cs.spv");
     mGenerateJacobiTilesPipeline = MakeComputePipeline("generate_jacobi_tiles.cs.spv");
+    mGenerateResidualTilesPipeline = MakeComputePipeline("generate_residual_tiles.cs.spv");
     
     // Set up buffers
     const auto& CreateBuffer = [&](uint32_t byteSize, BufferUsageBits usage) {
@@ -400,6 +401,23 @@ void FluidRenderer::VCycle(Handle<CommandList> cmdList, Handle<Texture> rhs, int
     Jacobi(cmdList, jacobiParams);
 
     if (level == maxLevel) return;
+
+    // Compute the residual: r = b - A * x
+    const float hSquaredRcp = 1.0f / jacobiParams.hSquare;
+    cmdList->SetResourceState(*mResidualTilesTexture[level], ResourceStateBits::UNORDERED_ACCESS);
+    cmdList->SetComputeState({
+        .pipeline = mGenerateResidualTilesPipeline,
+        .bindings = {
+            Binding(*jacobiParams.tileData),
+            Binding(*jacobiParams.tileAddresses),
+            Binding(*jacobiParams.tilesIndirections),
+            Binding(*jacobiParams.rhs),
+            Binding(*jacobiParams.u),
+            Binding(*mResidualTilesTexture[level]),
+        },
+        .pushConstants = { .byteSize = sizeof(float), .data = (void*)&hSquaredRcp }
+    });
+    cmdList->DispatchIndirect(*jacobiParams.dispatchIndirectArgs);
 }
 
 Handle<Texture> FluidRenderer::GetDebugTilesTexture() const
