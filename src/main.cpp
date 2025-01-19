@@ -56,7 +56,7 @@ int main()
         .depthStencil = { .shouldEnableDepthTesting = true }
     });
 
-    gui.SetDebugImage(rayMarchRenderer.GetRenderTarget());
+    gui.SetDebugImage(rayMarchRenderer.GetDebugRenderTarget());
 
     Timer timer;
     float dt = 0.0f;;
@@ -77,6 +77,11 @@ int main()
 
         gridRenderer.Render(cmdList, swapchainTexture);
         fluidRenderer.Render(cmdList);
+        rayMarchRenderer.RenderVolume(cmdList, RenderVolumeArgs{
+            .renderTarget = swapchainTexture,
+            .params = gui.GetParams(),
+            .camera = camera
+        });
         rayMarchRenderer.Render(cmdList, RenderArgs{
             .tileTags = fluidRenderer.GetTileTagsTexture(),
             .densityTiles = fluidRenderer.GetDensityTilesTexture(),

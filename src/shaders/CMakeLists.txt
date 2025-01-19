@@ -30,8 +30,8 @@ set(SHADERS_CS
     "copy_tiles.cs.hlsl"
 )
 set(SHADERS_DS)
-set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl" "render_2d.ps.hlsl")
-set(SHADERS_VS "imgui.vs.hlsl" "fullscreen_quad.vs.hlsl" "grid.vs.hlsl")
+set(SHADERS_PS "imgui.ps.hlsl" "blit.ps.hlsl" "grid.ps.hlsl" "render_2d.ps.hlsl" "render_3d.ps.hlsl")
+set(SHADERS_VS "imgui.vs.hlsl" "fullscreen_quad.vs.hlsl" "grid.vs.hlsl" "render_3d.vs.hlsl")
 set(SHADERS_GS)
 set(SHADERS_HS)
 set(SHADERS_LIB)
