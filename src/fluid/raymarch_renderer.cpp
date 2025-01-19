@@ -21,6 +21,7 @@ struct Render2dPushConstantData {
 
 struct Render3dPushConstantData {
     glm::mat4 worldToClip;
+    glm::vec3 cameraPosition;
 };
 
 constexpr std::array<glm::vec3, 8> kCubeVertices = {
@@ -123,13 +124,17 @@ void RayMarchRenderer::RenderVolume(Handle<CommandList> cmdList, const RenderVol
 {
     const Render3dPushConstantData pushConstantsData = {
         .worldToClip = args.camera.GetViewProjectionMatrix(1280.f / 720.f),
+        .cameraPosition = args.camera.GetPosition(),
     };
+    cmdList->SetResourceState(*args.densityTiles, ResourceStateBits::SHADER_RESOURCE);
+    cmdList->SetResourceState(*args.indirectionTiles, ResourceStateBits::SHADER_RESOURCE);
     cmdList->SetGraphicsState({
         .pipeline = mRender3dPipeline,
         .viewport = Viewport(args.renderTarget.GetWidth(), args.renderTarget.GetHeight()),
         .colorAttachments = {{ .texture = &args.renderTarget, .loadOp = LoadOp::LOAD }},
         .vertexBuffer = mCubeVertexBuffer,
         .indexBuffer = mCubeIndexBuffer,
+        .bindings = { Binding(*args.densityTiles), Binding(*args.indirectionTiles) },
         .pushConstants = { .byteSize = sizeof(Render3dPushConstantData), .data = (void*)&pushConstantsData },
     });
     cmdList->DrawIndexed({ .vertexCount = kCubeIndices.size() });

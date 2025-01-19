@@ -11,7 +11,6 @@ class Buffer;
 
 struct RenderArgs {
     Handle<Texture> tileTags;;
-    Handle<Texture> densityTiles;
     Handle<Texture> tilesToRender;
     Handle<Texture> indirectionTiles;
     FluidSimParams params;
@@ -20,6 +19,8 @@ struct RenderArgs {
 struct RenderVolumeArgs {
     const Texture& renderTarget;
     const Camera& camera;
+    Handle<Texture> indirectionTiles;
+    Handle<Texture> densityTiles;
     FluidSimParams params;
 };
 

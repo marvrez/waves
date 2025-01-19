@@ -222,6 +222,7 @@ void FluidRenderer::RenderFluid(Handle<CommandList> _, const FluidSimParams& par
                 .densityRadius = glm::compMax(kDensitySize)
             };
             // Generate the indirect dispatch arguments
+            cmdList->SetResourceState(*mDensityTilesTexture, ResourceStateBits::UNORDERED_ACCESS);
             cmdList->SetComputeState({ 
                 .pipeline = mGenerateDensityTilesPipeline,
                 .bindings = {

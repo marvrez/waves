@@ -97,3 +97,49 @@ float3 Heatmap(float t)
     const float3 r = wc * c[cur] + wp * c[prv] + wn * c[nxt];
     return saturate(float3(r.x, r.y, r.z));
 }
+
+static inline float2 GetUnitBoxIntersection(float3 origin, float3 direction)
+{
+    static const float3 kMinExtent = float3(0.0, 0.0, 0.0);
+    static const float3 kMaxExtent = float3(1.0, 1.0, 1.0);
+
+    const float3 tMin = (kMinExtent - origin) / direction;
+    const float3 tMax = (kMaxExtent - origin) / direction;
+    const float3 t1 = min(tMin, tMax);
+    const float3 t2 = max(tMin, tMax);
+    const float tNear = max(max(t1.x, t1.y), t1.z);
+    const float tFar = min(min(t2.x, t2.y), t2.z);
+    return float2(tNear, tFar);
+}
+
+static inline uint4 Pcg4dHash(uint4 v)
+{
+    v = v * 1664525u + 1013904223u;
+
+    v.x += v.y * v.w;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v.w += v.y * v.z;
+
+    v = v ^ (v >> 16u);
+
+    v.x += v.y * v.w;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v.w += v.y * v.z;
+
+    return v;
+}
+
+static inline float UintTo01Float(uint v)
+{
+    static const uint MANTISSA_MASK = 0x007FFFFFu;
+    static const uint ONE = 0x3F800000u;
+    return asfloat((v & MANTISSA_MASK) | ONE) - 1.0;
+}
+
+static inline float GetRandom(float4 p)
+{
+    const uint4 seed = asuint(p);
+    return UintTo01Float(Pcg4dHash(seed).x);
+}

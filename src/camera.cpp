@@ -13,10 +13,10 @@ Camera::Camera(glm::vec3 position, float near, float far, float movementSpeed, f
 void Camera::ProcessKeyboard(const Window& window, float dt)
 {
     const float movedDistance = mMovementSpeed * dt;
-    if (window.Pressed(Keycode::KEY_W)) mPosition += mFront * movedDistance;
-    if (window.Pressed(Keycode::KEY_S)) mPosition -= mFront * movedDistance;
-    if (window.Pressed(Keycode::KEY_A)) mPosition -= mRight * movedDistance;
-    if (window.Pressed(Keycode::KEY_D)) mPosition += mRight * movedDistance;
+    if (window.Pressed(Keycode::KEY_W)) mPosition += mFront * movedDistance * 0.1f;
+    if (window.Pressed(Keycode::KEY_S)) mPosition -= mFront * movedDistance * 0.1f;
+    if (window.Pressed(Keycode::KEY_A)) mPosition -= mRight * movedDistance * 0.1f;
+    if (window.Pressed(Keycode::KEY_D)) mPosition += mRight * movedDistance * 0.1f;
     if (window.Pressed(Keycode::KEY_E)) mPosition += mUp * movedDistance;
     if (window.Pressed(Keycode::KEY_Q)) mPosition -= mUp * movedDistance;
     if (window.Pressed(Keycode::KEY_LEFT)) mYaw -= movedDistance;

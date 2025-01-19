@@ -39,7 +39,7 @@ int main()
     Swapchain swapchain = Swapchain(device, swapchainDesc);
     GUI gui = GUI(device, swapchain, window);
 
-    Camera camera = Camera(glm::vec3(0.f, 1.f, -5.f), 0.1f, 1000.f, 100.f);
+    Camera camera = Camera(glm::vec3(0.5f, 0.5f, -1.f), 0.1f, 1000.f, 100.f);
 
     auto gridRenderer = CurvedGridRenderer(device, swapchain, camera);
     auto fluidRenderer = FluidRenderer(device, camera, gui);
@@ -80,11 +80,12 @@ int main()
         rayMarchRenderer.RenderVolume(cmdList, RenderVolumeArgs{
             .renderTarget = swapchainTexture,
             .params = gui.GetParams(),
-            .camera = camera
+            .camera = camera,
+            .indirectionTiles = fluidRenderer.GetTilesTexture(),
+            .densityTiles = fluidRenderer.GetDensityTilesTexture(),
         });
         rayMarchRenderer.Render(cmdList, RenderArgs{
             .tileTags = fluidRenderer.GetTileTagsTexture(),
-            .densityTiles = fluidRenderer.GetDensityTilesTexture(),
             .tilesToRender = fluidRenderer.GetDebugTilesTexture(),
             .indirectionTiles = fluidRenderer.GetTilesTexture(),
             .params = gui.GetParams()
